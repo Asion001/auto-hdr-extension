@@ -19,7 +19,7 @@ export default class AutoHDRExtension extends Extension {
         this._windowsChangedIds = [];
         this._displayConfigProxy = null;
         this._trackedApps = new Set();
-        this._hdrState = new Map(); // Track HDR state per monitor
+        this._hdrEnabled = false; // Track current HDR state
     }
 
     enable() {
@@ -65,7 +65,7 @@ export default class AutoHDRExtension extends Extension {
 
         // Cleanup
         this._trackedApps.clear();
-        this._hdrState.clear();
+        this._hdrEnabled = false;
         this._settings = null;
         this._appSystem = null;
         this._windowTracker = null;
@@ -188,11 +188,20 @@ export default class AutoHDRExtension extends Extension {
             }
         }
 
-        // Apply HDR state
+        // Apply HDR state - only if it needs to change
         if (shouldEnableHDR && !shouldDisableHDR) {
-            this._setHDR(true);
+            if (!this._hdrEnabled) {
+                this._setHDR(true);
+            }
         } else if (shouldDisableHDR && !shouldEnableHDR) {
-            this._setHDR(false);
+            if (this._hdrEnabled) {
+                this._setHDR(false);
+            }
+        } else if (!shouldEnableHDR && !shouldDisableHDR) {
+            // No HDR-on or HDR-off apps running
+            if (this._hdrEnabled) {
+                this._setHDR(false);
+            }
         }
     }
 
@@ -299,10 +308,11 @@ export default class AutoHDRExtension extends Extension {
                     }
 
                     // Apply the modified configuration
-                    // Method: 1 = verify (don't persist), 2 = persistent
+                    // Method: 1 = temporary/verify (no persistence, no confirmation)
+                    // Method: 2 = persistent (requires confirmation)
                     const applyParams = new GLib.Variant(
                         '(uua(iiduba(ssa{sv}))a{sv})',
-                        [serial, 2, modifiedLogicalMonitors, properties]
+                        [serial, 1, modifiedLogicalMonitors, properties]
                     );
 
                     // Apply configuration asynchronously
@@ -315,6 +325,7 @@ export default class AutoHDRExtension extends Extension {
                         (proxy, applyResult) => {
                             try {
                                 proxy.call_finish(applyResult);
+                                this._hdrEnabled = enable; // Update state after successful apply
                                 this._log(`HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`);
                                 
                                 // Notify user
