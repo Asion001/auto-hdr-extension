@@ -27,12 +27,8 @@ export default class AutoHDRExtension extends Extension {
         this._appSystem = Shell.AppSystem.get_default();
         this._windowTracker = Shell.WindowTracker.get_default();
         
-        // Initialize DBus proxy for DisplayConfig
-        try {
-            this._initDisplayConfigProxy();
-        } catch (e) {
-            this._log(`Error initializing DisplayConfig proxy: ${e}`);
-        }
+        // Initialize DBus proxy for DisplayConfig asynchronously
+        this._initDisplayConfigProxy();
 
         // Connect to app system changes
         this._runningAppsChangedId = this._appSystem.connect(
@@ -45,8 +41,8 @@ export default class AutoHDRExtension extends Extension {
             this._onWindowCreated(window);
         });
 
-        // Initial check of running apps
-        this._checkRunningApps();
+        // Initial check of running apps - but only after proxy is ready
+        // We'll check in the proxy initialization callback
         
         this._log('Auto HDR Extension enabled');
     }
@@ -97,17 +93,27 @@ export default class AutoHDRExtension extends Extension {
           </interface>
         </node>`;
 
-        this._displayConfigProxy = Gio.DBusProxy.new_for_bus_sync(
+        // Use async initialization to avoid freezing
+        Gio.DBusProxy.new_for_bus(
             Gio.BusType.SESSION,
             Gio.DBusProxyFlags.NONE,
             Gio.DBusNodeInfo.new_for_xml(DisplayConfigInterface).interfaces[0],
             DISPLAY_CONFIG_BUS_NAME,
             DISPLAY_CONFIG_PATH,
             DISPLAY_CONFIG_INTERFACE,
-            null
+            null,
+            (source, result) => {
+                try {
+                    this._displayConfigProxy = Gio.DBusProxy.new_for_bus_finish(result);
+                    this._log('DisplayConfig proxy initialized');
+                    
+                    // Now that proxy is ready, do initial check
+                    this._checkRunningApps();
+                } catch (e) {
+                    this._log(`Error initializing DisplayConfig proxy: ${e}`);
+                }
+            }
         );
-        
-        this._log('DisplayConfig proxy initialized');
     }
 
     _log(message) {
@@ -224,15 +230,28 @@ export default class AutoHDRExtension extends Extension {
                             const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
                             
                             if (shouldModify) {
-                                // The monitorProps is already a dictionary of variants
-                                // We need to create a new dictionary with the color-mode set
                                 const colorMode = enable ? 'bt2100-pq' : 'default';
                                 
-                                // Create a new properties object by merging existing props with new color-mode
-                                const newMonitorProps = Object.assign({}, monitorProps);
+                                // Log the original properties for debugging
+                                this._log(`Original monitorProps type: ${typeof monitorProps}`);
+                                this._log(`Original monitorProps: ${JSON.stringify(Object.keys(monitorProps || {}))}`);
+                                
+                                // monitorProps is a JS object with GLib.Variant values
+                                // We need to rebuild it as a proper variant dict
+                                const newMonitorProps = {};
+                                
+                                // Copy all existing properties
+                                if (monitorProps) {
+                                    for (const key in monitorProps) {
+                                        newMonitorProps[key] = monitorProps[key];
+                                    }
+                                }
+                                
+                                // Set the new color-mode
                                 newMonitorProps['color-mode'] = GLib.Variant.new_string(colorMode);
                                 
                                 this._log(`Setting HDR ${enable ? 'ON' : 'OFF'} (${colorMode}) for monitor: ${connector}`);
+                                this._log(`New monitorProps keys: ${JSON.stringify(Object.keys(newMonitorProps))}`);
                                 modifiedCount++;
                                 
                                 return [connector, mode, newMonitorProps];
