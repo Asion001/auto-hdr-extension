@@ -3,6 +3,7 @@
   "name": "Auto HDR",
   "description": "Automatically enables or disables HDR for specific applications on selected monitors",
   "version": 1,
+  "version-name": "1.0.1",
   "shell-version": [
     "49"
   ],
