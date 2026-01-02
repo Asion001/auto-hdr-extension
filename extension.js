@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const DISPLAY_CONFIG_INTERFACE = 'org.gnome.Mutter.DisplayConfig';
@@ -20,6 +21,7 @@ export default class AutoHDRExtension extends Extension {
         this._displayConfigProxy = null;
         this._trackedApps = new Set();
         this._hdrEnabled = false; // Track current HDR state
+        this._notificationSource = null;
     }
 
     enable() {
@@ -62,6 +64,12 @@ export default class AutoHDRExtension extends Extension {
             }
         });
         this._windowsChangedIds = [];
+
+        // Cleanup notification source
+        if (this._notificationSource) {
+            this._notificationSource.destroy();
+            this._notificationSource = null;
+        }
 
         // Cleanup
         this._trackedApps.clear();
@@ -331,15 +339,15 @@ export default class AutoHDRExtension extends Extension {
                                 this._hdrEnabled = enable; // Update state after successful apply
                                 this._log(`HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`);
                                 
-                                // Notify user
-                                Main.notify(
+                                // Notify user with transient notification
+                                this._showNotification(
                                     'Auto HDR',
                                     `HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`
                                 );
                             } catch (e) {
                                 this._log(`Error applying monitor config: ${e}`);
                                 this._log(`Error details: ${e.message}`);
-                                Main.notify(
+                                this._showNotification(
                                     'Auto HDR Error',
                                     `Failed to apply HDR configuration: ${e.message}`
                                 );
@@ -349,12 +357,29 @@ export default class AutoHDRExtension extends Extension {
                 } catch (e) {
                     this._log(`Error getting display state: ${e}`);
                     this._log(`Error details: ${e.message}`);
-                    Main.notify(
+                    this._showNotification(
                         'Auto HDR Error',
                         `Failed to get display state: ${e.message}`
                     );
                 }
             }
         );
+    }
+
+    _showNotification(title, message) {
+        // Create a transient notification that auto-dismisses
+        // Using the messageTray system for better control
+        if (!this._notificationSource) {
+            this._notificationSource = new MessageTray.Source('Auto HDR', 'preferences-system-symbolic');
+            Main.messageTray.add(this._notificationSource);
+        }
+
+        const notification = new MessageTray.Notification(this._notificationSource, title, message);
+        notification.setTransient(true); // Auto-dismiss after a few seconds
+        this._notificationSource.showNotification(notification);
+    }
+
+    _log(message) {
+        console.log(`[Auto HDR] ${message}`);
     }
 }
