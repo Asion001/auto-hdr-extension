@@ -279,17 +279,18 @@ export default class AutoHDRExtension extends Extension {
                             const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
                             
                             if (shouldModify) {
-                                // For HDR: use 'bt2100-pq' (HDR10) or 'default' (SDR)
-                                // Based on GNOME Settings: color-space property in monitor properties
-                                const colorSpace = enable ? 'bt2100-pq' : 'default';
+                                // For HDR: color-mode property is a u32 integer
+                                // 0 = Default (SDR), 1 = BT2100 (HDR10)
+                                // Based on Mutter DisplayConfig API specification
+                                const colorMode = enable ? 1 : 0;
                                 
-                                // Create monitor properties with color-space
+                                // Create monitor properties with color-mode as u32
                                 // ApplyMonitorsConfig expects (ssa{sv}) format
                                 const monitorProps = {
-                                    'color-space': GLib.Variant.new_string(colorSpace)
+                                    'color-mode': GLib.Variant.new_uint32(colorMode)
                                 };
                                 
-                                this._log(`Setting HDR ${enable ? 'ON' : 'OFF'} (color-space: ${colorSpace}) for monitor: ${connector}`);
+                                this._log(`Setting HDR ${enable ? 'ON' : 'OFF'} (color-mode: ${colorMode}) for monitor: ${connector}`);
                                 modifiedCount++;
                                 
                                 // Return in (ssa{sv}) format for ApplyMonitorsConfig
