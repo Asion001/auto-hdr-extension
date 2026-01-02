@@ -81,6 +81,27 @@ Once configured, the extension works automatically:
 
 Notifications will appear when HDR state changes.
 
+## Technical Details
+
+### HDR Control Implementation
+
+The extension uses the **Mutter DisplayConfig DBus API** (`org.gnome.Mutter.DisplayConfig`) to control HDR:
+
+- **GetCurrentState**: Retrieves current display configuration
+- **ApplyMonitorsConfig**: Applies new display settings including color mode
+- **Color Modes**:
+  - `bt2100-pq`: HDR10 mode (Perceptual Quantizer)
+  - `default`: Standard Dynamic Range (SDR)
+
+This is the proper way to control HDR in GNOME, as used by GNOME Settings and command-line tools like `gdctl`.
+
+### Architecture
+
+- **App Tracking**: Uses `Shell.AppSystem` and `Shell.WindowTracker` to monitor running applications
+- **State Management**: Tracks which HDR-on/off apps are running to make intelligent decisions
+- **DBus Integration**: Direct integration with Mutter's display configuration API
+- **Per-Monitor Control**: Supports selecting specific monitors or all HDR-capable displays
+
 ## Building
 
 Build the extension:

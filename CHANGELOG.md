@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Fixed HDR control to use proper Mutter DisplayConfig DBus API (`org.gnome.Mutter.DisplayConfig`)
+- HDR now actually toggles on/off using `bt2100-pq` color mode for HDR10
+- Fixed preferences window error by removing Shell namespace dependency
+
+### Changed
+- Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
+- Now uses `GetCurrentState` and `ApplyMonitorsConfig` methods for HDR control
+- Extension main file increased from 194 to 295 lines with proper DBus implementation
+
 ## [1.0.0] - 2026-01-02
 
 ### Added
