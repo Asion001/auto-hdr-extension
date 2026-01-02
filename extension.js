@@ -217,22 +217,24 @@ export default class AutoHDRExtension extends Extension {
 
                     // Build a map of connector -> current mode ID from monitors info
                     const monitorModes = new Map();
-                    this._log(`monitors: ${JSON.stringify(monitors)}`);
                     monitors.forEach(monitor => {
                         const [monitorSpec, modes, monitorProps] = monitor;
                         const connector = monitorSpec[0]; // First element is connector name
                         
-                        // Find the current mode (the one being used)
-                        // In the modes array, look for the current mode ID from monitorProps
-                        // monitorProps is a GLib.Variant dictionary, need to lookup the key
-                        this._log(`monitorProps: ${JSON.stringify(monitorProps)}`);
-                        const currentModeVariant = monitorProps.lookup_value['color-mode'];
-                        if (currentModeVariant) {
-                            const currentModeId = currentModeVariant.get_string()[0];
+                        // Find the current mode in the modes array
+                        // Each mode is: [modeId, width, height, refresh, ?, scales, properties]
+                        // Look for the mode with 'is-current' property
+                        const currentMode = modes.find(mode => {
+                            const modeProperties = mode[6]; // 7th element contains properties
+                            return modeProperties && modeProperties['is-current'] !== undefined;
+                        });
+                        
+                        if (currentMode) {
+                            const currentModeId = currentMode[0]; // First element is the mode ID
                             monitorModes.set(connector, currentModeId);
-                            this._log(`Found mode ID ${currentModeId} for monitor ${connector}`);
+                            this._log(`Found current mode ${currentModeId} for monitor ${connector}`);
                         } else {
-                            this._log(`Warning: No color-mode property for monitor ${connector}`);
+                            this._log(`Warning: No current mode found for monitor ${connector}`);
                         }
                     });
 
