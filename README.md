@@ -2,6 +2,18 @@
 
 Automatically enables or disables HDR (High Dynamic Range) for specific applications on GNOME Shell 49+.
 
+## Why This Extension?
+
+HDR support is now available on Linux, which is great for watching HDR content and gaming. However, many HDR monitors have a common issue: they dim the display when large portions of white are shown, which can be annoying during regular desktop use or when working with productivity applications.
+
+This extension was created to solve this problem. Since I primarily watch HDR content in MPV player and prefer SDR (Standard Dynamic Range) for everything else, this extension automatically manages HDR state based on which applications are running. This means:
+
+- **HDR automatically enables** when you launch your media player or games
+- **HDR automatically disables** when you close those apps or switch to productivity work
+- **No manual toggling** needed through GNOME Settings
+
+If you find yourself in a similar situation—enjoying HDR content but dealing with annoying dimming during regular use—this extension provides a seamless, automated solution.
+
 ## Features
 
 - 🎮 **Automatic HDR Control**: Turn HDR on/off when specific applications launch
@@ -128,6 +140,8 @@ auto-hdr-extension/
 ├── stylesheet.css            # Extension styles
 ├── schemas/                  # GSettings schemas
 │   └── org.gnome.shell.extensions.auto-hdr.gschema.xml
+├── scripts/                  # Utility scripts
+│   └── release.sh            # Version management and release script
 ├── .github/workflows/        # CI/CD pipelines
 │   └── ci.yml
 ├── Makefile                  # Build scripts
@@ -141,6 +155,26 @@ auto-hdr-extension/
    ```bash
    journalctl -f -o cat | grep "Auto HDR"
    ```
+
+### Creating a Release
+
+To create a new release, use the provided release script:
+
+```bash
+./scripts/release.sh 1.0.2
+```
+
+This script will:
+1. Update version in `package.json` and `metadata.json`
+2. Increment the integer version in `metadata.json`
+3. Commit the version changes
+4. Create a git tag (e.g., `v1.0.2`)
+5. Push commits and tags to GitHub
+
+The GitHub Actions CI/CD pipeline will then automatically:
+- Run linting and build checks
+- Create a GitHub release
+- Upload the extension package
 
 ## Troubleshooting
 
