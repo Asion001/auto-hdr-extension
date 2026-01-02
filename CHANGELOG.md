@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed HDR control to use proper Mutter DisplayConfig DBus API (`org.gnome.Mutter.DisplayConfig`)
 - HDR now actually toggles on/off using `bt2100-pq` color mode for HDR10
 - Fixed preferences window error by removing Shell namespace dependency
+- **Fixed DBus timeout errors** by converting from synchronous to asynchronous calls with proper 30-second timeout
 
 ### Changed
 - Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
 - Now uses `GetCurrentState` and `ApplyMonitorsConfig` methods for HDR control
-- Extension main file increased from 194 to 295 lines with proper DBus implementation
+- **Converted to async DBus calls** to prevent blocking and timeout issues
+- Extension main file increased from 194 to 307 lines with async DBus implementation
 
 ## [1.0.0] - 2026-01-02
 
