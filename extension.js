@@ -275,7 +275,7 @@ export default class AutoHDRExtension extends Extension {
                     // Apply the modified configuration
                     // Method: 1 = verify (don't persist), 2 = persistent
                     const applyParams = new GLib.Variant(
-                        '(uua(iiduba(ssss)a{sv})a{sv})',
+                        '(uua(iiduba(ssa{sv}))a{sv})',
                         [serial, 2, modifiedLogicalMonitors, properties]
                     );
 
