@@ -223,44 +223,51 @@ export default class AutoHDRExtension extends Extension {
                     const modifiedLogicalMonitors = logicalMonitors.map(logicalMonitor => {
                         const [x, y, scale, transform, isPrimary, monitorsInLogical, logicalProps] = logicalMonitor;
                         
+                        // Log the structure for debugging
+                        this._log(`Logical monitor structure - monitors count: ${monitorsInLogical.length}`);
+                        if (monitorsInLogical.length > 0) {
+                            this._log(`First monitor structure: ${JSON.stringify(monitorsInLogical[0])}`);
+                            this._log(`First monitor length: ${monitorsInLogical[0].length}`);
+                        }
+                        this._log(`Logical props keys: ${JSON.stringify(Object.keys(logicalProps || {}))}`);
+                        
                         const modifiedMonitorsInLogical = monitorsInLogical.map(monitor => {
-                            const [connector, mode, monitorProps] = monitor;
+                            // Monitor is just (ssss) - 4 strings
+                            this._log(`Monitor tuple: ${JSON.stringify(monitor)}`);
+                            this._log(`Monitor tuple length: ${monitor.length}`);
+                            
+                            const connector = monitor[0];
+                            const mode = monitor[1];
                             
                             // Check if this monitor should be modified
                             const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
                             
                             if (shouldModify) {
                                 const colorMode = enable ? 'bt2100-pq' : 'default';
-                                
-                                // Log the original properties for debugging
-                                this._log(`Original monitorProps type: ${typeof monitorProps}`);
-                                this._log(`Original monitorProps: ${JSON.stringify(Object.keys(monitorProps || {}))}`);
-                                
-                                // monitorProps is a JS object with GLib.Variant values
-                                // We need to rebuild it as a proper variant dict
-                                const newMonitorProps = {};
-                                
-                                // Copy all existing properties
-                                if (monitorProps) {
-                                    for (const key in monitorProps) {
-                                        newMonitorProps[key] = monitorProps[key];
-                                    }
-                                }
-                                
-                                // Set the new color-mode
-                                newMonitorProps['color-mode'] = GLib.Variant.new_string(colorMode);
-                                
                                 this._log(`Setting HDR ${enable ? 'ON' : 'OFF'} (${colorMode}) for monitor: ${connector}`);
-                                this._log(`New monitorProps keys: ${JSON.stringify(Object.keys(newMonitorProps))}`);
                                 modifiedCount++;
-                                
-                                return [connector, mode, newMonitorProps];
                             }
                             
+                            // Return monitor tuple as-is (it's just 4 strings)
                             return monitor;
                         });
                         
-                        return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical, logicalProps];
+                        // The color-mode needs to be set in the logical monitor properties, not individual monitors!
+                        const newLogicalProps = Object.assign({}, logicalProps);
+                        
+                        // Check if any monitor in this logical monitor should be modified
+                        const shouldModifyLogicalMonitor = monitorsInLogical.some(monitor => {
+                            const connector = monitor[0];
+                            return selectedMonitors.length === 0 || selectedMonitors.includes(connector);
+                        });
+                        
+                        if (shouldModifyLogicalMonitor) {
+                            const colorMode = enable ? 'bt2100-pq' : 'default';
+                            newLogicalProps['color-mode'] = GLib.Variant.new_string(colorMode);
+                            this._log(`Set color-mode to ${colorMode} in logical monitor properties`);
+                        }
+                        
+                        return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical, newLogicalProps];
                     });
 
                     if (modifiedCount === 0) {
