@@ -224,25 +224,15 @@ export default class AutoHDRExtension extends Extension {
                             const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
                             
                             if (shouldModify) {
-                                // Create new properties dict with color-mode set
-                                const newMonitorProps = {};
+                                // The monitorProps is already a dictionary of variants
+                                // We need to create a new dictionary with the color-mode set
+                                const colorMode = enable ? 'bt2100-pq' : 'default';
                                 
-                                // Copy existing properties
-                                for (const key in monitorProps) {
-                                    newMonitorProps[key] = monitorProps[key];
-                                }
+                                // Create a new properties object by merging existing props with new color-mode
+                                const newMonitorProps = Object.assign({}, monitorProps);
+                                newMonitorProps['color-mode'] = GLib.Variant.new_string(colorMode);
                                 
-                                // Set color mode based on enable flag
-                                if (enable) {
-                                    // Try to enable HDR - use bt2100-pq for HDR10
-                                    newMonitorProps['color-mode'] = new GLib.Variant('s', 'bt2100-pq');
-                                    this._log(`Setting HDR ON (bt2100-pq) for monitor: ${connector}`);
-                                } else {
-                                    // Disable HDR - use default/sRGB mode
-                                    newMonitorProps['color-mode'] = new GLib.Variant('s', 'default');
-                                    this._log(`Setting HDR OFF (default) for monitor: ${connector}`);
-                                }
-                                
+                                this._log(`Setting HDR ${enable ? 'ON' : 'OFF'} (${colorMode}) for monitor: ${connector}`);
                                 modifiedCount++;
                                 
                                 return [connector, mode, newMonitorProps];
