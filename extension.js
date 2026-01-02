@@ -215,13 +215,27 @@ export default class AutoHDRExtension extends Extension {
                     const [serial, monitors, logicalMonitors, properties] = reply.deep_unpack();
                     this._log(`Current display state retrieved (serial: ${serial})`);
 
+                    // Build a map of connector -> current mode ID from monitors info
+                    const monitorModes = new Map();
+                    monitors.forEach(monitor => {
+                        const [monitorSpec, modes, monitorProps] = monitor;
+                        const connector = monitorSpec[0]; // First element is connector name
+                        
+                        // Find the current mode (the one being used)
+                        // In the modes array, look for the current mode ID from monitorProps
+                        const currentModeId = monitorProps['current-mode'];
+                        if (currentModeId) {
+                            monitorModes.set(connector, currentModeId.deep_unpack());
+                        }
+                    });
+
                     // Get selected monitors from settings, or use all if empty
                     const selectedMonitors = this._settings.get_strv('selected-monitors');
                     let modifiedCount = 0;
 
                     // Modify logical monitors to set HDR mode
                     const modifiedLogicalMonitors = logicalMonitors.map(logicalMonitor => {
-                        const [x, y, scale, transform, isPrimary, monitorsInLogical] = logicalMonitor;
+                        const [x, y, scale, transform, isPrimary, monitorsInLogical, logicalProps] = logicalMonitor;
                         
                         // Log the structure for debugging
                         this._log(`Logical monitor structure - monitors count: ${monitorsInLogical.length}`);
@@ -230,15 +244,18 @@ export default class AutoHDRExtension extends Extension {
                             this._log(`First monitor tuple length: ${monitorsInLogical[0].length}`);
                         }
                         
-                        const modifiedMonitorsInLogical = monitorsInLogical.map(monitor => {
-                            // GetCurrentState returns monitors as (ssss) - 4 strings
-                            // But ApplyMonitorsConfig expects (ssa{sv}) - connector, mode, properties
-                            // So we need to transform the data
-                            const connector = monitor[0];  // connector name
-                            const mode = monitor[1];       // mode string
-                            // monitor[2] and monitor[3] are vendor/product info, we don't need them for apply
+                        const modifiedMonitorsInLogical = monitorsInLogical.map(monitorSpec => {
+                            // GetCurrentState returns monitor specs as (ssss) - connector, vendor, product, serial
+                            // ApplyMonitorsConfig expects (ssa{sv}) - connector, mode, properties
+                            const connector = monitorSpec[0];  // connector name
+                            const modeId = monitorModes.get(connector);
                             
-                            this._log(`Monitor: ${connector}, mode: ${mode}`);
+                            if (!modeId) {
+                                this._log(`Warning: No mode found for monitor ${connector}`);
+                                return [connector, '', {}];
+                            }
+                            
+                            this._log(`Monitor: ${connector}, mode ID: ${modeId}`);
                             
                             // Check if this monitor should be modified
                             const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
@@ -256,15 +273,15 @@ export default class AutoHDRExtension extends Extension {
                                 modifiedCount++;
                                 
                                 // Return in (ssa{sv}) format for ApplyMonitorsConfig
-                                return [connector, mode, monitorProps];
+                                return [connector, modeId, monitorProps];
                             }
                             
                             // For unmodified monitors, still need to convert to (ssa{sv}) format
                             // with empty properties dict
-                            return [connector, mode, {}];
+                            return [connector, modeId, {}];
                         });
                         
-                        return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical];
+                        return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical, logicalProps];
                     });
 
                     if (modifiedCount === 0) {
