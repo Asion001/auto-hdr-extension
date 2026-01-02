@@ -217,6 +217,7 @@ export default class AutoHDRExtension extends Extension {
 
                     // Build a map of connector -> current mode ID from monitors info
                     const monitorModes = new Map();
+                    this._log(`monitors: ${JSON.stringify(monitors)}`);
                     monitors.forEach(monitor => {
                         const [monitorSpec, modes, monitorProps] = monitor;
                         const connector = monitorSpec[0]; // First element is connector name
@@ -224,13 +225,14 @@ export default class AutoHDRExtension extends Extension {
                         // Find the current mode (the one being used)
                         // In the modes array, look for the current mode ID from monitorProps
                         // monitorProps is a GLib.Variant dictionary, need to lookup the key
-                        const currentModeVariant = monitorProps.lookup_value('current-mode');
+                        this._log(`monitorProps: ${JSON.stringify(monitorProps)}`);
+                        const currentModeVariant = monitorProps.lookup_value['color-mode'];
                         if (currentModeVariant) {
                             const currentModeId = currentModeVariant.get_string()[0];
                             monitorModes.set(connector, currentModeId);
                             this._log(`Found mode ID ${currentModeId} for monitor ${connector}`);
                         } else {
-                            this._log(`Warning: No current-mode property for monitor ${connector}`);
+                            this._log(`Warning: No color-mode property for monitor ${connector}`);
                         }
                     });
 
