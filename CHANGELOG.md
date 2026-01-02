@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed freeze on extension enable** by using async `Gio.DBusProxy.new_for_bus()` instead of synchronous version
 - **Fixed data format transformation** - GetCurrentState returns monitors as `(ssss)` (4 strings), ApplyMonitorsConfig expects `(ssa{sv})` (2 strings + properties)
 - **Fixed color-mode property location** - now correctly set in monitor properties dictionary during transformation
+- **Fixed GLib.Variant signature** - changed signature from `(ssss)` to `(ssa{sv})` to match transformed data
+- **Fixed mode ID extraction** - now correctly extracts current mode ID from monitors array properties instead of treating vendor name as mode
 
 ### Changed
 - Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
@@ -23,8 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Converted proxy initialization to async** to prevent UI freezing
 - **Implemented data transformation** - converts monitor data from `(ssss)` received format to `(ssa{sv})` sent format
 - **Color-mode now set per-monitor** - created fresh properties dict with color-mode for each monitor during transformation
+- **Mode ID correctly extracted** - retrieves current mode ID from monitors array properties (`current-mode`) instead of monitor spec tuple
 - **Added detailed logging** for monitor structure and properties to aid in debugging
-- Extension main file increased from 194 to 320 lines with proper async DBus implementation and data transformation
+- Extension main file increased from 194 to 335 lines with proper async DBus implementation and data transformation
 
 ## [1.0.0] - 2026-01-02
 
