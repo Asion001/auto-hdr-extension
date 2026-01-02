@@ -2,7 +2,6 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
-import Shell from 'gi://Shell';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class AutoHDRPreferences extends ExtensionPreferences {
@@ -118,20 +117,19 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
     }
 
     _createAppRow(settings, key, appId) {
-        const appSystem = Shell.AppSystem.get_default();
-        const app = appSystem.lookup_app(appId);
+        const appInfo = Gio.DesktopAppInfo.new(appId);
         
-        if (!app) {
+        if (!appInfo) {
             return null;
         }
 
         const appRow = new Adw.ActionRow({
-            title: app.get_name(),
+            title: appInfo.get_display_name(),
             subtitle: appId,
         });
 
         // Add icon
-        const icon = app.get_icon();
+        const icon = appInfo.get_icon();
         if (icon) {
             const image = new Gtk.Image({
                 gicon: icon,
@@ -201,14 +199,17 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         scrolled.set_child(listBox);
 
         // Populate with apps
-        const appSystem = Shell.AppSystem.get_default();
-        const apps = appSystem.get_installed();
+        const apps = Gio.AppInfo.get_all();
         const currentApps = settings.get_strv(key);
         
         let selectedAppId = null;
 
-        apps.forEach(app => {
-            const appId = app.get_id();
+        apps.forEach(appInfo => {
+            const appId = appInfo.get_id();
+            
+            if (!appId || !appInfo.should_show()) {
+                return;
+            }
             
             // Skip already added apps
             if (currentApps.includes(appId)) {
@@ -225,7 +226,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
                 margin_end: 6,
             });
 
-            const icon = app.get_icon();
+            const icon = appInfo.get_icon();
             if (icon) {
                 const image = new Gtk.Image({
                     gicon: icon,
@@ -235,7 +236,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
             }
 
             const label = new Gtk.Label({
-                label: app.get_name(),
+                label: appInfo.get_display_name(),
                 xalign: 0,
                 hexpand: true,
             });
@@ -243,7 +244,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
 
             row.set_child(box);
             row._appId = appId;
-            row._appName = app.get_name().toLowerCase();
+            row._appName = appInfo.get_display_name().toLowerCase();
             listBox.append(row);
         });
 
