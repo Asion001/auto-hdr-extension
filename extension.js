@@ -224,7 +224,7 @@ export default class AutoHDRExtension extends Extension {
                         // Find the current mode (the one being used)
                         // In the modes array, look for the current mode ID from monitorProps
                         // monitorProps is a GLib.Variant dictionary, need to lookup the key
-                        const currentModeVariant = monitorProps.lookup_value('current-mode', null);
+                        const currentModeVariant = monitorProps.lookup_value('current-mode');
                         if (currentModeVariant) {
                             const currentModeId = currentModeVariant.get_string()[0];
                             monitorModes.set(connector, currentModeId);
