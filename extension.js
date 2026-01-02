@@ -1,8 +1,13 @@
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+
+const DISPLAY_CONFIG_INTERFACE = 'org.gnome.Mutter.DisplayConfig';
+const DISPLAY_CONFIG_PATH = '/org/gnome/Mutter/DisplayConfig';
+const DISPLAY_CONFIG_BUS_NAME = 'org.gnome.Mutter.DisplayConfig';
 
 export default class AutoHDRExtension extends Extension {
     constructor(metadata) {
@@ -12,8 +17,7 @@ export default class AutoHDRExtension extends Extension {
         this._windowTracker = null;
         this._runningAppsChangedId = null;
         this._windowsChangedIds = [];
-        this._monitorManager = null;
-        this._debugControl = null;
+        this._displayConfigProxy = null;
         this._trackedApps = new Set();
         this._hdrState = new Map(); // Track HDR state per monitor
     }
@@ -23,12 +27,11 @@ export default class AutoHDRExtension extends Extension {
         this._appSystem = Shell.AppSystem.get_default();
         this._windowTracker = Shell.WindowTracker.get_default();
         
-        // Get monitor manager and debug control for HDR operations
+        // Initialize DBus proxy for DisplayConfig
         try {
-            this._monitorManager = global.backend.get_monitor_manager();
-            this._debugControl = global.context.get_debug_control();
+            this._initDisplayConfigProxy();
         } catch (e) {
-            this._log(`Error getting monitor manager or debug control: ${e}`);
+            this._log(`Error initializing DisplayConfig proxy: ${e}`);
         }
 
         // Connect to app system changes
@@ -70,10 +73,41 @@ export default class AutoHDRExtension extends Extension {
         this._settings = null;
         this._appSystem = null;
         this._windowTracker = null;
-        this._monitorManager = null;
-        this._debugControl = null;
+        this._displayConfigProxy = null;
         
         this._log('Auto HDR Extension disabled');
+    }
+
+    _initDisplayConfigProxy() {
+        const DisplayConfigInterface = `
+        <node>
+          <interface name="${DISPLAY_CONFIG_INTERFACE}">
+            <method name="GetCurrentState">
+              <arg type="u" direction="out" name="serial"/>
+              <arg type="a((ssss)a(siiddada{sv})a{sv})" direction="out" name="monitors"/>
+              <arg type="a(iiduba(ssss)a{sv})" direction="out" name="logical_monitors"/>
+              <arg type="a{sv}" direction="out" name="properties"/>
+            </method>
+            <method name="ApplyMonitorsConfig">
+              <arg type="u" direction="in" name="serial"/>
+              <arg type="u" direction="in" name="method"/>
+              <arg type="a(iiduba(ssss)a{sv})" direction="in" name="logical_monitors"/>
+              <arg type="a{sv}" direction="in" name="properties"/>
+            </method>
+          </interface>
+        </node>`;
+
+        this._displayConfigProxy = Gio.DBusProxy.new_for_bus_sync(
+            Gio.BusType.SESSION,
+            Gio.DBusProxyFlags.NONE,
+            Gio.DBusNodeInfo.new_for_xml(DisplayConfigInterface).interfaces[0],
+            DISPLAY_CONFIG_BUS_NAME,
+            DISPLAY_CONFIG_PATH,
+            DISPLAY_CONFIG_INTERFACE,
+            null
+        );
+        
+        this._log('DisplayConfig proxy initialized');
     }
 
     _log(message) {
@@ -157,38 +191,105 @@ export default class AutoHDRExtension extends Extension {
     }
 
     _setHDR(enable) {
-        if (!this._debugControl) {
-            this._log('Debug control not available for HDR control');
+        if (!this._displayConfigProxy) {
+            this._log('DisplayConfig proxy not available for HDR control');
             return;
         }
 
         try {
-            // For GNOME 49, use enable_hdr property
-            const currentState = this._debugControl.enable_hdr;
-            
-            if (currentState === enable) {
-                this._log(`HDR already ${enable ? 'enabled' : 'disabled'}`);
+            // Get current display configuration
+            const result = this._displayConfigProxy.call_sync(
+                'GetCurrentState',
+                null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null
+            );
+
+            const [serial, monitors, logicalMonitors, properties] = result.deep_unpack();
+            this._log(`Current display state retrieved (serial: ${serial})`);
+
+            // Get selected monitors from settings, or use all if empty
+            const selectedMonitors = this._settings.get_strv('selected-monitors');
+            let modifiedCount = 0;
+
+            // Modify logical monitors to set HDR mode
+            const modifiedLogicalMonitors = logicalMonitors.map(logicalMonitor => {
+                const [x, y, scale, transform, isPrimary, monitorsInLogical, logicalProps] = logicalMonitor;
+                
+                const modifiedMonitorsInLogical = monitorsInLogical.map(monitor => {
+                    const [connector, mode, monitorProps] = monitor;
+                    
+                    // Check if this monitor should be modified
+                    const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
+                    
+                    if (shouldModify) {
+                        // Create new properties dict with color-mode set
+                        const newMonitorProps = {};
+                        
+                        // Copy existing properties
+                        for (const key in monitorProps) {
+                            newMonitorProps[key] = monitorProps[key];
+                        }
+                        
+                        // Set color mode based on enable flag
+                        // Try bt2100-pq (HDR10), fallback to default if not supported
+                        // Some systems might use 'bt2100-hlg' instead
+                        if (enable) {
+                            // Try to enable HDR - use bt2100-pq for HDR10
+                            newMonitorProps['color-mode'] = new GLib.Variant('s', 'bt2100-pq');
+                            this._log(`Setting HDR ON (bt2100-pq) for monitor: ${connector}`);
+                        } else {
+                            // Disable HDR - use default/sRGB mode
+                            newMonitorProps['color-mode'] = new GLib.Variant('s', 'default');
+                            this._log(`Setting HDR OFF (default) for monitor: ${connector}`);
+                        }
+                        
+                        modifiedCount++;
+                        
+                        return [connector, mode, newMonitorProps];
+                    }
+                    
+                    return monitor;
+                });
+                
+                return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical, logicalProps];
+            });
+
+            if (modifiedCount === 0) {
+                this._log('No monitors modified - check if monitors support HDR or are in selected list');
                 return;
             }
 
-            this._debugControl.enable_hdr = enable;
-            this._log(`HDR ${enable ? 'enabled' : 'disabled'}`);
+            // Apply the modified configuration
+            // Method: 1 = verify (don't persist), 2 = persistent
+            const applyParams = new GLib.Variant(
+                '(uua(iiduba(ssss)a{sv})a{sv})',
+                [serial, 2, modifiedLogicalMonitors, properties]
+            );
+
+            this._displayConfigProxy.call_sync(
+                'ApplyMonitorsConfig',
+                applyParams,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null
+            );
+
+            this._log(`HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`);
             
             // Notify user
             Main.notify(
                 'Auto HDR',
-                `HDR ${enable ? 'enabled' : 'disabled'}`
+                `HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`
             );
         } catch (e) {
             this._log(`Error setting HDR state: ${e}`);
+            this._log(`Error details: ${e.message}`);
+            Main.notify(
+                'Auto HDR Error',
+                `Failed to ${enable ? 'enable' : 'disable'} HDR: ${e.message}`
+            );
         }
-    }
-
-    _getHDRCapableMonitors() {
-        // This is a placeholder - in a real implementation, you would query
-        // the monitor manager for HDR capabilities
-        // For GNOME 47+, HDR is a global setting rather than per-monitor
-        const selectedMonitors = this._settings.get_strv('selected-monitors');
-        return selectedMonitors;
     }
 }
