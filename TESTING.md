@@ -5,7 +5,7 @@ This document describes how to test the Auto HDR Extension.
 ## Prerequisites
 
 - GNOME Shell 49
-- HDR-capable display
+- HDR-capable display(s)
 - At least one application installed (for testing)
 
 ## Installation for Testing

@@ -163,7 +163,7 @@ export default class AutoHDRExtension extends Extension {
         }
 
         try {
-            // For GNOME 47+ (including 49), use enable_hdr property
+            // For GNOME 49, use enable_hdr property
             const currentState = this._debugControl.enable_hdr;
             
             if (currentState === enable) {
