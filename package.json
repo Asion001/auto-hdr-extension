@@ -1,0 +1,33 @@
+{
+  "name": "auto-hdr-extension",
+  "version": "1.0.0",
+  "description": "GNOME Shell extension to automatically enable/disable HDR for specific applications",
+  "scripts": {
+    "lint": "eslint *.js",
+    "lint:fix": "eslint *.js --fix",
+    "build": "make build",
+    "package": "make zip"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Asion001/auto-hdr-extension.git"
+  },
+  "keywords": [
+    "gnome",
+    "gnome-shell",
+    "gnome-extension",
+    "hdr",
+    "gaming",
+    "display"
+  ],
+  "author": "Asion001",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Asion001/auto-hdr-extension/issues"
+  },
+  "homepage": "https://github.com/Asion001/auto-hdr-extension#readme",
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-plugin-jsdoc": "^48.0.2"
+  }
+}

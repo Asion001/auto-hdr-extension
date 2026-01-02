@@ -1,0 +1,11 @@
+{
+  "uuid": "auto-hdr@asion.dev",
+  "name": "Auto HDR",
+  "description": "Automatically enables or disables HDR for specific applications on selected monitors",
+  "version": 1,
+  "shell-version": [
+    "49"
+  ],
+  "url": "https://github.com/Asion001/auto-hdr-extension",
+  "settings-schema": "org.gnome.shell.extensions.auto-hdr"
+}

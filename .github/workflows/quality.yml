@@ -1,0 +1,100 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  json-validation:
+    name: Validate JSON files
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Validate metadata.json
+        run: |
+          jq empty metadata.json
+          echo "✓ metadata.json is valid"
+
+      - name: Validate package.json
+        run: |
+          jq empty package.json
+          echo "✓ package.json is valid"
+
+      - name: Validate .eslintrc.json
+        run: |
+          jq empty .eslintrc.json
+          echo "✓ .eslintrc.json is valid"
+
+  xml-validation:
+    name: Validate XML files
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install xmllint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-utils
+
+      - name: Validate schema XML
+        run: |
+          xmllint --noout schemas/*.gschema.xml
+          echo "✓ Schema XML is valid"
+
+  markdown-lint:
+    name: Lint Markdown files
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint Markdown files
+        uses: articulate/actions-markdownlint@v1
+        continue-on-error: true
+        with:
+          files: '*.md'
+          config: .markdownlint.json
+          ignore: node_modules
+
+  file-structure:
+    name: Verify file structure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check required files
+        run: |
+          required_files="extension.js prefs.js metadata.json schemas/org.gnome.shell.extensions.auto-hdr.gschema.xml"
+          for file in $required_files; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            fi
+            echo "✓ Found: $file"
+          done
+
+      - name: Check documentation
+        run: |
+          docs="README.md INSTALL.md CONTRIBUTING.md CHANGELOG.md LICENSE"
+          for doc in $docs; do
+            if [ ! -f "$doc" ]; then
+              echo "⚠️  Missing documentation: $doc"
+            else
+              echo "✓ Found: $doc"
+            fi
+          done
