@@ -81,13 +81,13 @@ export default class AutoHDRExtension extends Extension {
             <method name="GetCurrentState">
               <arg type="u" direction="out" name="serial"/>
               <arg type="a((ssss)a(siiddada{sv})a{sv})" direction="out" name="monitors"/>
-              <arg type="a(iiduba(ssss)a{sv})" direction="out" name="logical_monitors"/>
+              <arg type="a(iiduba(ssa{sv}))a{sv})" direction="out" name="logical_monitors"/>
               <arg type="a{sv}" direction="out" name="properties"/>
             </method>
             <method name="ApplyMonitorsConfig">
               <arg type="u" direction="in" name="serial"/>
               <arg type="u" direction="in" name="method"/>
-              <arg type="a(iiduba(ssss)a{sv})" direction="in" name="logical_monitors"/>
+              <arg type="a(iiduba(ssa{sv}))a{sv})" direction="in" name="logical_monitors"/>
               <arg type="a{sv}" direction="in" name="properties"/>
             </method>
           </interface>
@@ -221,53 +221,43 @@ export default class AutoHDRExtension extends Extension {
 
                     // Modify logical monitors to set HDR mode
                     const modifiedLogicalMonitors = logicalMonitors.map(logicalMonitor => {
-                        const [x, y, scale, transform, isPrimary, monitorsInLogical, logicalProps] = logicalMonitor;
+                        const [x, y, scale, transform, isPrimary, monitorsInLogical] = logicalMonitor;
                         
                         // Log the structure for debugging
                         this._log(`Logical monitor structure - monitors count: ${monitorsInLogical.length}`);
                         if (monitorsInLogical.length > 0) {
                             this._log(`First monitor structure: ${JSON.stringify(monitorsInLogical[0])}`);
-                            this._log(`First monitor length: ${monitorsInLogical[0].length}`);
+                            this._log(`First monitor tuple length: ${monitorsInLogical[0].length}`);
                         }
-                        this._log(`Logical props keys: ${JSON.stringify(Object.keys(logicalProps || {}))}`);
                         
                         const modifiedMonitorsInLogical = monitorsInLogical.map(monitor => {
-                            // Monitor is just (ssss) - 4 strings
-                            this._log(`Monitor tuple: ${JSON.stringify(monitor)}`);
-                            this._log(`Monitor tuple length: ${monitor.length}`);
+                            // Monitor is (ssa{sv}) - connector, mode, properties dict
+                            const [connector, mode, monitorProps] = monitor;
                             
-                            const connector = monitor[0];
-                            const mode = monitor[1];
+                            this._log(`Monitor: ${connector}, mode: ${mode}`);
+                            this._log(`Monitor props keys: ${JSON.stringify(Object.keys(monitorProps || {}))}`);
                             
                             // Check if this monitor should be modified
                             const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
                             
                             if (shouldModify) {
                                 const colorMode = enable ? 'bt2100-pq' : 'default';
+                                
+                                // Create new monitor properties with color-mode
+                                const newMonitorProps = Object.assign({}, monitorProps);
+                                newMonitorProps['color-mode'] = GLib.Variant.new_string(colorMode);
+                                
                                 this._log(`Setting HDR ${enable ? 'ON' : 'OFF'} (${colorMode}) for monitor: ${connector}`);
                                 modifiedCount++;
+                                
+                                return [connector, mode, newMonitorProps];
                             }
                             
-                            // Return monitor tuple as-is (it's just 4 strings)
+                            // Return monitor tuple unchanged
                             return monitor;
                         });
                         
-                        // The color-mode needs to be set in the logical monitor properties, not individual monitors!
-                        const newLogicalProps = Object.assign({}, logicalProps);
-                        
-                        // Check if any monitor in this logical monitor should be modified
-                        const shouldModifyLogicalMonitor = monitorsInLogical.some(monitor => {
-                            const connector = monitor[0];
-                            return selectedMonitors.length === 0 || selectedMonitors.includes(connector);
-                        });
-                        
-                        if (shouldModifyLogicalMonitor) {
-                            const colorMode = enable ? 'bt2100-pq' : 'default';
-                            newLogicalProps['color-mode'] = GLib.Variant.new_string(colorMode);
-                            this._log(`Set color-mode to ${colorMode} in logical monitor properties`);
-                        }
-                        
-                        return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical, newLogicalProps];
+                        return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical];
                     });
 
                     if (modifiedCount === 0) {
