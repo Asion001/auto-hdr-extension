@@ -13,16 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed preferences window error by removing Shell namespace dependency
 - **Fixed DBus timeout errors** by converting from synchronous to asynchronous calls with proper 30-second timeout
 - **Fixed freeze on extension enable** by using async `Gio.DBusProxy.new_for_bus()` instead of synchronous version
-- **Fixed DBus structure understanding** - color-mode property now correctly set in logical monitor properties dictionary, not in individual monitor tuples
+- **Fixed DBus signature** - corrected interface definition to `(ssa{sv})` for monitors, matching actual Mutter API
+- **Fixed color-mode property location** - now correctly set in each monitor's properties dictionary
 
 ### Changed
 - Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
 - Now uses `GetCurrentState` and `ApplyMonitorsConfig` methods for HDR control
 - **Converted to async DBus calls** to prevent blocking and timeout issues
 - **Converted proxy initialization to async** to prevent UI freezing
-- **Corrected DBus data structure handling** - monitors are `(ssss)` tuples, properties are in logical monitor level
+- **Corrected DBus signature** - monitors are `(ssa{sv})` tuples (connector, mode, properties dict)
+- **Color-mode now set per-monitor** - each monitor tuple contains its own properties dict with color-mode
 - **Added detailed logging** for monitor structure and properties to aid in debugging
-- Extension main file increased from 194 to 323 lines with proper async DBus implementation
+- Extension main file increased from 194 to 313 lines with proper async DBus implementation
 
 ## [1.0.0] - 2026-01-02
 
