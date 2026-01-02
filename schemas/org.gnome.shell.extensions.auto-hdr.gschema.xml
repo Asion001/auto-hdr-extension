@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.auto-hdr" path="/org/gnome/shell/extensions/auto-hdr/">
+    <key name="hdr-on-apps" type="as">
+      <default>[]</default>
+      <summary>Applications that trigger HDR on</summary>
+      <description>List of application IDs that should enable HDR when launched</description>
+    </key>
+    <key name="hdr-off-apps" type="as">
+      <default>[]</default>
+      <summary>Applications that trigger HDR off</summary>
+      <description>List of application IDs that should disable HDR when launched</description>
+    </key>
+    <key name="selected-monitors" type="as">
+      <default>[]</default>
+      <summary>Monitors to control</summary>
+      <description>List of monitor connectors to control HDR for (empty means all HDR-capable monitors)</description>
+    </key>
+    <key name="enable-logging" type="b">
+      <default>false</default>
+      <summary>Enable debug logging</summary>
+      <description>Enable detailed logging for debugging purposes</description>
+    </key>
+  </schema>
+</schemalist>

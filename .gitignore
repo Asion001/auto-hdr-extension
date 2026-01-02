@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+schemas/gschemas.compiled
+
+# Node modules (if any)
+node_modules/
+package-lock.json
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.orig
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
