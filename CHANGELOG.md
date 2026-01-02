@@ -12,17 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HDR now actually toggles on/off using `bt2100-pq` color mode for HDR10
 - Fixed preferences window error by removing Shell namespace dependency
 - **Fixed DBus timeout errors** by converting from synchronous to asynchronous calls with proper 30-second timeout
-- **Fixed GLib.Variant type error** when constructing monitor properties dictionary - now properly uses `GLib.Variant.new_string()` for property merging
 - **Fixed freeze on extension enable** by using async `Gio.DBusProxy.new_for_bus()` instead of synchronous version
+- **Fixed DBus structure understanding** - color-mode property now correctly set in logical monitor properties dictionary, not in individual monitor tuples
 
 ### Changed
 - Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
 - Now uses `GetCurrentState` and `ApplyMonitorsConfig` methods for HDR control
 - **Converted to async DBus calls** to prevent blocking and timeout issues
 - **Converted proxy initialization to async** to prevent UI freezing
-- Simplified monitor properties handling to avoid type confusion
-- **Added detailed logging** for monitor properties to aid in debugging
-- Extension main file increased from 194 to 316 lines with proper async DBus implementation
+- **Corrected DBus data structure handling** - monitors are `(ssss)` tuples, properties are in logical monitor level
+- **Added detailed logging** for monitor structure and properties to aid in debugging
+- Extension main file increased from 194 to 323 lines with proper async DBus implementation
 
 ## [1.0.0] - 2026-01-02
 
