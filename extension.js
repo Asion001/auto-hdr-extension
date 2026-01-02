@@ -81,7 +81,7 @@ export default class AutoHDRExtension extends Extension {
             <method name="GetCurrentState">
               <arg type="u" direction="out" name="serial"/>
               <arg type="a((ssss)a(siiddada{sv})a{sv})" direction="out" name="monitors"/>
-              <arg type="a(iiduba(ssa{sv}))a{sv})" direction="out" name="logical_monitors"/>
+              <arg type="a(iiduba(ssss)a{sv})" direction="out" name="logical_monitors"/>
               <arg type="a{sv}" direction="out" name="properties"/>
             </method>
             <method name="ApplyMonitorsConfig">
@@ -231,11 +231,14 @@ export default class AutoHDRExtension extends Extension {
                         }
                         
                         const modifiedMonitorsInLogical = monitorsInLogical.map(monitor => {
-                            // Monitor is (ssa{sv}) - connector, mode, properties dict
-                            const [connector, mode, monitorProps] = monitor;
+                            // GetCurrentState returns monitors as (ssss) - 4 strings
+                            // But ApplyMonitorsConfig expects (ssa{sv}) - connector, mode, properties
+                            // So we need to transform the data
+                            const connector = monitor[0];  // connector name
+                            const mode = monitor[1];       // mode string
+                            // monitor[2] and monitor[3] are vendor/product info, we don't need them for apply
                             
                             this._log(`Monitor: ${connector}, mode: ${mode}`);
-                            this._log(`Monitor props keys: ${JSON.stringify(Object.keys(monitorProps || {}))}`);
                             
                             // Check if this monitor should be modified
                             const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
@@ -243,18 +246,22 @@ export default class AutoHDRExtension extends Extension {
                             if (shouldModify) {
                                 const colorMode = enable ? 'bt2100-pq' : 'default';
                                 
-                                // Create new monitor properties with color-mode
-                                const newMonitorProps = Object.assign({}, monitorProps);
-                                newMonitorProps['color-mode'] = GLib.Variant.new_string(colorMode);
+                                // Create monitor properties with color-mode
+                                // ApplyMonitorsConfig expects (ssa{sv}) format
+                                const monitorProps = {
+                                    'color-mode': GLib.Variant.new_string(colorMode)
+                                };
                                 
                                 this._log(`Setting HDR ${enable ? 'ON' : 'OFF'} (${colorMode}) for monitor: ${connector}`);
                                 modifiedCount++;
                                 
-                                return [connector, mode, newMonitorProps];
+                                // Return in (ssa{sv}) format for ApplyMonitorsConfig
+                                return [connector, mode, monitorProps];
                             }
                             
-                            // Return monitor tuple unchanged
-                            return monitor;
+                            // For unmodified monitors, still need to convert to (ssa{sv}) format
+                            // with empty properties dict
+                            return [connector, mode, {}];
                         });
                         
                         return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical];
