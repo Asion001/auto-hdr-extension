@@ -196,100 +196,112 @@ export default class AutoHDRExtension extends Extension {
             return;
         }
 
-        try {
-            // Get current display configuration
-            const result = this._displayConfigProxy.call_sync(
-                'GetCurrentState',
-                null,
-                Gio.DBusCallFlags.NONE,
-                -1,
-                null
-            );
+        // Use async call to avoid blocking and timeout issues
+        this._displayConfigProxy.call(
+            'GetCurrentState',
+            null,
+            Gio.DBusCallFlags.NONE,
+            30000, // 30 second timeout
+            null,
+            (proxy, result) => {
+                try {
+                    const reply = proxy.call_finish(result);
+                    const [serial, monitors, logicalMonitors, properties] = reply.deep_unpack();
+                    this._log(`Current display state retrieved (serial: ${serial})`);
 
-            const [serial, monitors, logicalMonitors, properties] = result.deep_unpack();
-            this._log(`Current display state retrieved (serial: ${serial})`);
+                    // Get selected monitors from settings, or use all if empty
+                    const selectedMonitors = this._settings.get_strv('selected-monitors');
+                    let modifiedCount = 0;
 
-            // Get selected monitors from settings, or use all if empty
-            const selectedMonitors = this._settings.get_strv('selected-monitors');
-            let modifiedCount = 0;
+                    // Modify logical monitors to set HDR mode
+                    const modifiedLogicalMonitors = logicalMonitors.map(logicalMonitor => {
+                        const [x, y, scale, transform, isPrimary, monitorsInLogical, logicalProps] = logicalMonitor;
+                        
+                        const modifiedMonitorsInLogical = monitorsInLogical.map(monitor => {
+                            const [connector, mode, monitorProps] = monitor;
+                            
+                            // Check if this monitor should be modified
+                            const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
+                            
+                            if (shouldModify) {
+                                // Create new properties dict with color-mode set
+                                const newMonitorProps = {};
+                                
+                                // Copy existing properties
+                                for (const key in monitorProps) {
+                                    newMonitorProps[key] = monitorProps[key];
+                                }
+                                
+                                // Set color mode based on enable flag
+                                if (enable) {
+                                    // Try to enable HDR - use bt2100-pq for HDR10
+                                    newMonitorProps['color-mode'] = new GLib.Variant('s', 'bt2100-pq');
+                                    this._log(`Setting HDR ON (bt2100-pq) for monitor: ${connector}`);
+                                } else {
+                                    // Disable HDR - use default/sRGB mode
+                                    newMonitorProps['color-mode'] = new GLib.Variant('s', 'default');
+                                    this._log(`Setting HDR OFF (default) for monitor: ${connector}`);
+                                }
+                                
+                                modifiedCount++;
+                                
+                                return [connector, mode, newMonitorProps];
+                            }
+                            
+                            return monitor;
+                        });
+                        
+                        return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical, logicalProps];
+                    });
 
-            // Modify logical monitors to set HDR mode
-            const modifiedLogicalMonitors = logicalMonitors.map(logicalMonitor => {
-                const [x, y, scale, transform, isPrimary, monitorsInLogical, logicalProps] = logicalMonitor;
-                
-                const modifiedMonitorsInLogical = monitorsInLogical.map(monitor => {
-                    const [connector, mode, monitorProps] = monitor;
-                    
-                    // Check if this monitor should be modified
-                    const shouldModify = selectedMonitors.length === 0 || selectedMonitors.includes(connector);
-                    
-                    if (shouldModify) {
-                        // Create new properties dict with color-mode set
-                        const newMonitorProps = {};
-                        
-                        // Copy existing properties
-                        for (const key in monitorProps) {
-                            newMonitorProps[key] = monitorProps[key];
-                        }
-                        
-                        // Set color mode based on enable flag
-                        // Try bt2100-pq (HDR10), fallback to default if not supported
-                        // Some systems might use 'bt2100-hlg' instead
-                        if (enable) {
-                            // Try to enable HDR - use bt2100-pq for HDR10
-                            newMonitorProps['color-mode'] = new GLib.Variant('s', 'bt2100-pq');
-                            this._log(`Setting HDR ON (bt2100-pq) for monitor: ${connector}`);
-                        } else {
-                            // Disable HDR - use default/sRGB mode
-                            newMonitorProps['color-mode'] = new GLib.Variant('s', 'default');
-                            this._log(`Setting HDR OFF (default) for monitor: ${connector}`);
-                        }
-                        
-                        modifiedCount++;
-                        
-                        return [connector, mode, newMonitorProps];
+                    if (modifiedCount === 0) {
+                        this._log('No monitors modified - check if monitors support HDR or are in selected list');
+                        return;
                     }
-                    
-                    return monitor;
-                });
-                
-                return [x, y, scale, transform, isPrimary, modifiedMonitorsInLogical, logicalProps];
-            });
 
-            if (modifiedCount === 0) {
-                this._log('No monitors modified - check if monitors support HDR or are in selected list');
-                return;
+                    // Apply the modified configuration
+                    // Method: 1 = verify (don't persist), 2 = persistent
+                    const applyParams = new GLib.Variant(
+                        '(uua(iiduba(ssss)a{sv})a{sv})',
+                        [serial, 2, modifiedLogicalMonitors, properties]
+                    );
+
+                    // Apply configuration asynchronously
+                    this._displayConfigProxy.call(
+                        'ApplyMonitorsConfig',
+                        applyParams,
+                        Gio.DBusCallFlags.NONE,
+                        30000, // 30 second timeout
+                        null,
+                        (proxy, applyResult) => {
+                            try {
+                                proxy.call_finish(applyResult);
+                                this._log(`HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`);
+                                
+                                // Notify user
+                                Main.notify(
+                                    'Auto HDR',
+                                    `HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`
+                                );
+                            } catch (e) {
+                                this._log(`Error applying monitor config: ${e}`);
+                                this._log(`Error details: ${e.message}`);
+                                Main.notify(
+                                    'Auto HDR Error',
+                                    `Failed to apply HDR configuration: ${e.message}`
+                                );
+                            }
+                        }
+                    );
+                } catch (e) {
+                    this._log(`Error getting display state: ${e}`);
+                    this._log(`Error details: ${e.message}`);
+                    Main.notify(
+                        'Auto HDR Error',
+                        `Failed to get display state: ${e.message}`
+                    );
+                }
             }
-
-            // Apply the modified configuration
-            // Method: 1 = verify (don't persist), 2 = persistent
-            const applyParams = new GLib.Variant(
-                '(uua(iiduba(ssss)a{sv})a{sv})',
-                [serial, 2, modifiedLogicalMonitors, properties]
-            );
-
-            this._displayConfigProxy.call_sync(
-                'ApplyMonitorsConfig',
-                applyParams,
-                Gio.DBusCallFlags.NONE,
-                -1,
-                null
-            );
-
-            this._log(`HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`);
-            
-            // Notify user
-            Main.notify(
-                'Auto HDR',
-                `HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`
-            );
-        } catch (e) {
-            this._log(`Error setting HDR state: ${e}`);
-            this._log(`Error details: ${e.message}`);
-            Main.notify(
-                'Auto HDR Error',
-                `Failed to ${enable ? 'enable' : 'disable'} HDR: ${e.message}`
-            );
-        }
+        );
     }
 }
