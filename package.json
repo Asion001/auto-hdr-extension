@@ -1,6 +1,6 @@
 {
   "name": "auto-hdr-extension",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "GNOME Shell extension to automatically enable/disable HDR for specific applications",
   "scripts": {
     "lint": "eslint *.js",
