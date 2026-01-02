@@ -81,14 +81,14 @@ echo -e "${GREEN}✓ Updated metadata.json to ${VERSION} (integer version: ${NEW
 
 echo ""
 echo -e "${YELLOW}Changes to be committed:${NC}"
-git diff --color=always package.json metadata.json
+git diff package.json metadata.json
 
 echo ""
 read -p "Do you want to continue with these changes? (y/N) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Release cancelled. Reverting changes...${NC}"
-    git checkout package.json metadata.json
+    git restore package.json metadata.json
     exit 0
 fi
 
