@@ -32,9 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed mode ID extraction** - now correctly extracts current mode ID from monitors array by finding mode with `is-current` property
 - **Fixed confirmation dialogs** - changed from persistent method (2) to temporary method (1) to avoid "save/revert" prompts
 - **Fixed color-mode value type** - use u32 integer (0=SDR, 1=HDR) instead of string per Mutter API specification
-- **Fixed MessageTray.Source constructor** - Updated to use object parameter syntax instead of positional arguments for GNOME Shell 49 compatibility
-- **Fixed MessageTray.Notification constructor** - Updated to use object parameter syntax for GNOME Shell 49 compatibility
-- **Fixed notification transient property** - Changed from `setTransient()` method to `isTransient` property in constructor for GNOME Shell 49 compatibility
+- **Fixed notification system** - Replaced MessageTray.Source/Notification API with simple `Main.notify()` calls for GNOME Shell 49 compatibility
 - **Fixed ClutterActor initialization error** - Deferred menu building to next event loop tick to ensure menu object is fully initialized before use
 - **Fixed Quick Settings menu items** - Changed from QuickToggle widgets to PopupMenu.PopupSwitchMenuItem for proper menu integration
 
