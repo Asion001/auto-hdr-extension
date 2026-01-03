@@ -26,5 +26,15 @@
       <summary>Show Quick Settings toggle</summary>
       <description>Show HDR toggle button in the Quick Settings menu</description>
     </key>
+    <key name="show-hdr-enabled-notification" type="b">
+      <default>true</default>
+      <summary>Show HDR enabled notification</summary>
+      <description>Show notification when HDR is enabled</description>
+    </key>
+    <key name="show-hdr-disabled-notification" type="b">
+      <default>true</default>
+      <summary>Show HDR disabled notification</summary>
+      <description>Show notification when HDR is disabled</description>
+    </key>
   </schema>
 </schemalist>

@@ -530,11 +530,16 @@ export default class AutoHDRExtension extends Extension {
                                     this._indicator.updateIndicator(enable);
                                 }
 
-                                // Notify user with transient notification
-                                this._showNotification(
-                                    'Auto HDR',
-                                    `HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`
-                                );
+                                // Notify user with transient notification (if enabled in settings)
+                                const showEnabledNotif = this._settings.get_boolean('show-hdr-enabled-notification');
+                                const showDisabledNotif = this._settings.get_boolean('show-hdr-disabled-notification');
+
+                                if ((enable && showEnabledNotif) || (!enable && showDisabledNotif)) {
+                                    this._showNotification(
+                                        'Auto HDR',
+                                        `HDR ${enable ? 'enabled' : 'disabled'} on ${modifiedCount} monitor(s)`
+                                    );
+                                }
                             } catch (e) {
                                 this._log(`Error applying monitor config: ${e}`);
                                 this._log(`Error details: ${e.message}`);

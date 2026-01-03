@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - HDR indicator icon in top bar (visible when HDR is enabled)
   - Automatic state synchronization between automatic and manual controls
   - **Preference to show/hide Quick Settings toggle**: Control visibility of the HDR button in preferences
+- **Notification Preferences**: Separate toggles to control HDR enabled and disabled notifications
+  - **Show HDR Enabled Notification**: Control whether to show notification when HDR turns on (default: enabled)
+  - **Show HDR Disabled Notification**: Control whether to show notification when HDR turns off (default: enabled)
 
 ### Fixed
 - Fixed HDR control to use proper Mutter DisplayConfig DBus API (`org.gnome.Mutter.DisplayConfig`)

@@ -77,6 +77,9 @@ If you find yourself in a similar situation—enjoying HDR content but dealing w
    - **Monitors**: Specify monitor connectors (leave empty for all HDR-capable displays)
    - **Settings**:
      - **Show Quick Settings Toggle**: Enable/disable the HDR button in the system menu (enabled by default)
+   - **Notifications**:
+     - **Show HDR Enabled Notification**: Display notification when HDR is turned on (enabled by default)
+     - **Show HDR Disabled Notification**: Display notification when HDR is turned off (enabled by default)
      - **Enable Debug Logging**: Turn on detailed logging for troubleshooting
 
 ### Example Use Cases

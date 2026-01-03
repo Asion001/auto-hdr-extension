@@ -84,6 +84,51 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         quickSettingsRow.activatable_widget = quickSettingsSwitch;
         settingsGroup.add(quickSettingsRow);
 
+        // Notifications Group
+        const notificationsGroup = new Adw.PreferencesGroup({
+            title: 'Notifications',
+            description: 'Control which notifications to show',
+        });
+        page.add(notificationsGroup);
+
+        // HDR Enabled notification switch
+        const hdrEnabledNotifRow = new Adw.ActionRow({
+            title: 'Show HDR Enabled Notification',
+            subtitle: 'Display notification when HDR is turned on',
+        });
+        const hdrEnabledNotifSwitch = new Gtk.Switch({
+            active: settings.get_boolean('show-hdr-enabled-notification'),
+            valign: Gtk.Align.CENTER,
+        });
+        settings.bind(
+            'show-hdr-enabled-notification',
+            hdrEnabledNotifSwitch,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+        hdrEnabledNotifRow.add_suffix(hdrEnabledNotifSwitch);
+        hdrEnabledNotifRow.activatable_widget = hdrEnabledNotifSwitch;
+        notificationsGroup.add(hdrEnabledNotifRow);
+
+        // HDR Disabled notification switch
+        const hdrDisabledNotifRow = new Adw.ActionRow({
+            title: 'Show HDR Disabled Notification',
+            subtitle: 'Display notification when HDR is turned off',
+        });
+        const hdrDisabledNotifSwitch = new Gtk.Switch({
+            active: settings.get_boolean('show-hdr-disabled-notification'),
+            valign: Gtk.Align.CENTER,
+        });
+        settings.bind(
+            'show-hdr-disabled-notification',
+            hdrDisabledNotifSwitch,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+        hdrDisabledNotifRow.add_suffix(hdrDisabledNotifSwitch);
+        hdrDisabledNotifRow.activatable_widget = hdrDisabledNotifSwitch;
+        notificationsGroup.add(hdrDisabledNotifRow);
+
         // Debug logging switch
         const loggingRow = new Adw.ActionRow({
             title: 'Enable Debug Logging',
