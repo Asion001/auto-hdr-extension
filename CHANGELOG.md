@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed notification system** - Replaced MessageTray.Source/Notification API with simple `Main.notify()` calls for GNOME Shell 49 compatibility
 - **Fixed ClutterActor initialization error** - Deferred menu building to next event loop tick to ensure menu object is fully initialized before use
 - **Fixed Quick Settings menu items** - Changed from QuickToggle widgets to PopupMenu.PopupSwitchMenuItem for proper menu integration
+- **Fixed infinite toggle loop** - Block signals when programmatically updating toggle state to prevent infinite loops and status bar blinking
 
 ### Changed
 - Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
