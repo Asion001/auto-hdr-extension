@@ -29,7 +29,7 @@ const HDRMonitorToggle = GObject.registerClass(
         updateState(enabled) {
             // Block signals while updating state to prevent infinite loops
             this.block_signal_handler(this._toggledId);
-            this.setToggleState(enabled);
+            this.checked = enabled;
             this.unblock_signal_handler(this._toggledId);
         }
     });
