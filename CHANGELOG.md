@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed Quick Settings menu items** - Changed from QuickToggle widgets to PopupMenu.PopupSwitchMenuItem for proper menu integration
 - **Fixed infinite toggle loop** - Block signals when programmatically updating toggle state to prevent infinite loops and status bar blinking
 - **Fixed stale button states** - Update Quick Settings toggle states automatically when menu is opened
+- **Fixed external HDR change detection** - Monitor DisplayConfig signals to update UI when HDR is changed in Settings app
 
 ### Changed
 - Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
