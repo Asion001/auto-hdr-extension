@@ -62,6 +62,13 @@ const HDRMenuToggle = GObject.registerClass(
                 this._buildMenu();
                 return GLib.SOURCE_REMOVE;
             });
+
+            // Update states when the menu is opened
+            this.menu.connect('open-state-changed', (menu, isOpen) => {
+                if (isOpen) {
+                    this._updateStates();
+                }
+            });
         }
 
         _buildMenu() {
