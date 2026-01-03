@@ -110,6 +110,7 @@ You can also manually toggle HDR using the Quick Settings menu:
 3. **Quick Toggle**: Click the button to toggle HDR for all configured monitors
 4. **Expanded View**: Click the arrow next to the HDR button to see individual monitor controls
 5. **Per-Monitor Control**: Toggle HDR for specific monitors independently
+6. **Automatic HDR Toggle**: In the expanded view, use the "Automatic HDR" toggle to enable/disable app-based HDR control
 
 The HDR icon in the top bar will be visible when HDR is enabled on any monitor.
 

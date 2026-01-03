@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Main toggle button in collapsed view for quick HDR on/off
   - Expandable menu showing all HDR-capable monitors
   - Individual per-monitor toggles when expanded
+  - **Automatic HDR toggle in expanded menu**: Enable/disable app-based automatic HDR control directly from Quick Settings
   - HDR indicator icon in top bar (visible when HDR is enabled)
   - Automatic state synchronization between automatic and manual controls
   - **Preference to show/hide Quick Settings toggle**: Control visibility of the HDR button in preferences

@@ -4,6 +4,7 @@ import GObject from 'gi://GObject';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -88,6 +89,22 @@ const HDRMenuToggle = GObject.registerClass(
                     this._monitorToggles.set(monitor.connector, toggle);
                     this.menu.addMenuItem(toggle);
                 });
+
+                // Add separator
+                this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+                // Add Auto HDR toggle
+                const autoHDRToggle = new QuickSettings.QuickToggle({
+                    title: 'Automatic HDR',
+                    subtitle: 'Toggle based on apps',
+                    iconName: 'emblem-synchronizing-symbolic',
+                    toggleMode: true,
+                });
+                autoHDRToggle.checked = this._extension._settings.get_boolean('enable-auto-hdr');
+                autoHDRToggle.connect('clicked', () => {
+                    this._extension._settings.set_boolean('enable-auto-hdr', autoHDRToggle.checked);
+                });
+                this.menu.addMenuItem(autoHDRToggle);
 
                 // Update initial states
                 this._updateStates();
@@ -329,6 +346,12 @@ export default class AutoHDRExtension extends Extension {
     }
 
     _checkRunningApps() {
+        // Check if automatic HDR is enabled
+        if (!this._settings.get_boolean('enable-auto-hdr')) {
+            this._log('Automatic HDR is disabled, skipping app check');
+            return;
+        }
+
         const runningApps = this._appSystem.get_running();
         const hdrOnApps = this._settings.get_strv('hdr-on-apps');
         const hdrOffApps = this._settings.get_strv('hdr-off-apps');

@@ -36,5 +36,10 @@
       <summary>Show HDR disabled notification</summary>
       <description>Show notification when HDR is disabled</description>
     </key>
+    <key name="enable-auto-hdr" type="b">
+      <default>true</default>
+      <summary>Enable automatic HDR</summary>
+      <description>Automatically enable/disable HDR based on running applications</description>
+    </key>
   </schema>
 </schemalist>
