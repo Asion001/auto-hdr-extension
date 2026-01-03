@@ -185,6 +185,8 @@ export default class AutoHDRExtension extends Extension {
         this._settingsChangedId = null;
         this._windowsChangedIds = [];
         this._displayConfigProxy = null;
+        this._displayConfigSignalId = null;
+        this._externalChangeTimeout = null;
         this._trackedApps = new Set();
         this._hdrEnabled = false; // Track current HDR state
         this._indicator = null; // Quick Settings indicator
@@ -247,6 +249,18 @@ export default class AutoHDRExtension extends Extension {
         });
         this._windowsChangedIds = [];
 
+        // Disconnect DisplayConfig signal
+        if (this._displayConfigProxy && this._displayConfigSignalId) {
+            this._displayConfigProxy.disconnect(this._displayConfigSignalId);
+            this._displayConfigSignalId = null;
+        }
+
+        // Clear any pending timeouts
+        if (this._externalChangeTimeout) {
+            GLib.source_remove(this._externalChangeTimeout);
+            this._externalChangeTimeout = null;
+        }
+
         // Cleanup Quick Settings indicator
         if (this._indicator) {
             this._indicator.destroy();
@@ -298,7 +312,7 @@ export default class AutoHDRExtension extends Extension {
                     this._log('DisplayConfig proxy initialized');
 
                     // Monitor for external monitor configuration changes
-                    this._displayConfigProxy.connect('g-signal', () => {
+                    this._displayConfigSignalId = this._displayConfigProxy.connect('g-signal', () => {
                         this._log('Monitor configuration changed externally');
                         this._onExternalMonitorChange();
                     });
@@ -329,10 +343,36 @@ export default class AutoHDRExtension extends Extension {
     }
 
     _onExternalMonitorChange() {
-        // Update Quick Settings UI when monitor configuration changes externally
-        if (this._indicator) {
-            this._indicator.refreshMenu();
+        // Debounce rapid configuration changes
+        if (this._externalChangeTimeout) {
+            GLib.source_remove(this._externalChangeTimeout);
         }
+
+        this._externalChangeTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+            this._externalChangeTimeout = null;
+
+            // Update Quick Settings UI when monitor configuration changes externally
+            if (this._indicator) {
+                // Check current HDR state and update UI
+                this._getCurrentHDRState((hdrState) => {
+                    let anyEnabled = false;
+                    hdrState.forEach((enabled) => {
+                        if (enabled) anyEnabled = true;
+                    });
+
+                    // Update internal state
+                    this._hdrEnabled = anyEnabled;
+
+                    // Update indicator icon
+                    this._indicator.updateIndicator(anyEnabled);
+
+                    // Refresh menu to update toggle states
+                    this._indicator.refreshMenu();
+                });
+            }
+
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     _log(message) {
