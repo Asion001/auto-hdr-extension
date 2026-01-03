@@ -21,5 +21,25 @@
       <summary>Enable debug logging</summary>
       <description>Enable detailed logging for debugging purposes</description>
     </key>
+    <key name="show-quick-settings-toggle" type="b">
+      <default>true</default>
+      <summary>Show Quick Settings toggle</summary>
+      <description>Show HDR toggle button in the Quick Settings menu</description>
+    </key>
+    <key name="show-hdr-enabled-notification" type="b">
+      <default>true</default>
+      <summary>Show HDR enabled notification</summary>
+      <description>Show notification when HDR is enabled</description>
+    </key>
+    <key name="show-hdr-disabled-notification" type="b">
+      <default>true</default>
+      <summary>Show HDR disabled notification</summary>
+      <description>Show notification when HDR is disabled</description>
+    </key>
+    <key name="enable-auto-hdr" type="b">
+      <default>true</default>
+      <summary>Enable automatic HDR</summary>
+      <description>Automatically enable/disable HDR based on running applications</description>
+    </key>
   </schema>
 </schemalist>

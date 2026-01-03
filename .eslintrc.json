@@ -10,6 +10,7 @@
   "globals": {
     "imports": "readonly",
     "global": "readonly",
+    "console": "readonly",
     "log": "readonly",
     "logError": "readonly",
     "print": "readonly",

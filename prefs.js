@@ -65,6 +65,70 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         });
         page.add(settingsGroup);
 
+        // Quick Settings toggle switch
+        const quickSettingsRow = new Adw.ActionRow({
+            title: 'Show Quick Settings Toggle',
+            subtitle: 'Display HDR toggle button in the system menu',
+        });
+        const quickSettingsSwitch = new Gtk.Switch({
+            active: settings.get_boolean('show-quick-settings-toggle'),
+            valign: Gtk.Align.CENTER,
+        });
+        settings.bind(
+            'show-quick-settings-toggle',
+            quickSettingsSwitch,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+        quickSettingsRow.add_suffix(quickSettingsSwitch);
+        quickSettingsRow.activatable_widget = quickSettingsSwitch;
+        settingsGroup.add(quickSettingsRow);
+
+        // Notifications Group
+        const notificationsGroup = new Adw.PreferencesGroup({
+            title: 'Notifications',
+            description: 'Control which notifications to show',
+        });
+        page.add(notificationsGroup);
+
+        // HDR Enabled notification switch
+        const hdrEnabledNotifRow = new Adw.ActionRow({
+            title: 'Show HDR Enabled Notification',
+            subtitle: 'Display notification when HDR is turned on',
+        });
+        const hdrEnabledNotifSwitch = new Gtk.Switch({
+            active: settings.get_boolean('show-hdr-enabled-notification'),
+            valign: Gtk.Align.CENTER,
+        });
+        settings.bind(
+            'show-hdr-enabled-notification',
+            hdrEnabledNotifSwitch,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+        hdrEnabledNotifRow.add_suffix(hdrEnabledNotifSwitch);
+        hdrEnabledNotifRow.activatable_widget = hdrEnabledNotifSwitch;
+        notificationsGroup.add(hdrEnabledNotifRow);
+
+        // HDR Disabled notification switch
+        const hdrDisabledNotifRow = new Adw.ActionRow({
+            title: 'Show HDR Disabled Notification',
+            subtitle: 'Display notification when HDR is turned off',
+        });
+        const hdrDisabledNotifSwitch = new Gtk.Switch({
+            active: settings.get_boolean('show-hdr-disabled-notification'),
+            valign: Gtk.Align.CENTER,
+        });
+        settings.bind(
+            'show-hdr-disabled-notification',
+            hdrDisabledNotifSwitch,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+        hdrDisabledNotifRow.add_suffix(hdrDisabledNotifSwitch);
+        hdrDisabledNotifRow.activatable_widget = hdrDisabledNotifSwitch;
+        notificationsGroup.add(hdrDisabledNotifRow);
+
         // Debug logging switch
         const loggingRow = new Adw.ActionRow({
             title: 'Enable Debug Logging',
@@ -93,7 +157,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
 
         // Get current apps
         const apps = settings.get_strv(key);
-        
+
         // Add current apps to the list
         apps.forEach(appId => {
             const appRow = this._createAppRow(settings, key, appId);
@@ -118,7 +182,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
 
     _createAppRow(settings, key, appId) {
         const appInfo = Gio.DesktopAppInfo.new(appId);
-        
+
         if (!appInfo) {
             return null;
         }
@@ -201,16 +265,16 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         // Populate with apps
         const apps = Gio.AppInfo.get_all();
         const currentApps = settings.get_strv(key);
-        
+
         let selectedAppId = null;
 
         apps.forEach(appInfo => {
             const appId = appInfo.get_id();
-            
+
             if (!appId || !appInfo.should_show()) {
                 return;
             }
-            
+
             // Skip already added apps
             if (currentApps.includes(appId)) {
                 return;
@@ -271,13 +335,13 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
                 if (selectedRow) {
                     selectedAppId = selectedRow._appId;
                 }
-                
+
                 if (selectedAppId) {
                     const apps = settings.get_strv(key);
                     if (!apps.includes(selectedAppId)) {
                         apps.push(selectedAppId);
                         settings.set_strv(key, apps);
-                        
+
                         const appRow = this._createAppRow(settings, key, selectedAppId);
                         if (appRow) {
                             expanderRow.add_row(appRow);
@@ -298,7 +362,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         });
 
         const selectedMonitors = settings.get_strv('selected-monitors');
-        
+
         // Add info label if no specific monitors selected
         if (selectedMonitors.length === 0) {
             const infoRow = new Adw.ActionRow({
