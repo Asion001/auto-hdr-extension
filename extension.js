@@ -588,7 +588,10 @@ export default class AutoHDRExtension extends Extension {
         // Create a transient notification that auto-dismisses
         // Using the messageTray system for better control
         if (!this._notificationSource) {
-            this._notificationSource = new MessageTray.Source('Auto HDR', 'preferences-system-symbolic');
+            this._notificationSource = new MessageTray.Source({
+                title: 'Auto HDR',
+                iconName: 'preferences-system-symbolic'
+            });
             Main.messageTray.add(this._notificationSource);
         }
 
