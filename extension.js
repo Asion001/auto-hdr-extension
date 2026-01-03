@@ -312,9 +312,13 @@ export default class AutoHDRExtension extends Extension {
                     this._log('DisplayConfig proxy initialized');
 
                     // Monitor for external monitor configuration changes
-                    this._displayConfigSignalId = this._displayConfigProxy.connect('g-signal', () => {
-                        this._log('Monitor configuration changed externally');
-                        this._onExternalMonitorChange();
+                    // Filter for MonitorsChanged signal if available, otherwise handle all signals
+                    this._displayConfigSignalId = this._displayConfigProxy.connect('g-signal', (proxy, senderName, signalName) => {
+                        // Only process if it's a MonitorsChanged signal or if signal name is not specified
+                        if (!signalName || signalName === 'MonitorsChanged') {
+                            this._log(`Monitor configuration changed externally (signal: ${signalName || 'any'})`);
+                            this._onExternalMonitorChange();
+                        }
                     });
 
                     // Now that proxy is ready, do initial check
@@ -355,10 +359,8 @@ export default class AutoHDRExtension extends Extension {
             if (this._indicator) {
                 // Check current HDR state and update UI
                 this._getCurrentHDRState((hdrState) => {
-                    let anyEnabled = false;
-                    hdrState.forEach((enabled) => {
-                        if (enabled) anyEnabled = true;
-                    });
+                    // Check if any monitor has HDR enabled
+                    const anyEnabled = Array.from(hdrState.values()).some(enabled => enabled);
 
                     // Update internal state
                     this._hdrEnabled = anyEnabled;
