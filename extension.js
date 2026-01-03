@@ -56,8 +56,11 @@ const HDRMenuToggle = GObject.registerClass(
                 this._extension._toggleAllHDR(this.checked);
             });
 
-            // Build the menu with monitor toggles
-            this._buildMenu();
+            // Build the menu with monitor toggles - defer to next tick
+            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                this._buildMenu();
+                return GLib.SOURCE_REMOVE;
+            });
         }
 
         _buildMenu() {
