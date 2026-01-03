@@ -3,7 +3,6 @@ import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -175,7 +174,6 @@ export default class AutoHDRExtension extends Extension {
         this._displayConfigProxy = null;
         this._trackedApps = new Set();
         this._hdrEnabled = false; // Track current HDR state
-        this._notificationSource = null;
         this._indicator = null; // Quick Settings indicator
     }
 
@@ -235,12 +233,6 @@ export default class AutoHDRExtension extends Extension {
             }
         });
         this._windowsChangedIds = [];
-
-        // Cleanup notification source
-        if (this._notificationSource) {
-            this._notificationSource.destroy();
-            this._notificationSource = null;
-        }
 
         // Cleanup Quick Settings indicator
         if (this._indicator) {
@@ -576,23 +568,9 @@ export default class AutoHDRExtension extends Extension {
     }
 
     _showNotification(title, message) {
-        // Create a transient notification that auto-dismisses
-        // Using the messageTray system for better control
-        if (!this._notificationSource) {
-            this._notificationSource = new MessageTray.Source({
-                title: 'Auto HDR',
-                iconName: 'preferences-system-symbolic'
-            });
-            Main.messageTray.add(this._notificationSource);
-        }
-
-        const notification = new MessageTray.Notification({
-            source: this._notificationSource,
-            title,
-            body: message,
-            isTransient: true
-        });
-        this._notificationSource.showNotification(notification);
+        // Use Main.notify() for simple transient notifications in GNOME Shell 49
+        // This is the recommended approach for extensions
+        Main.notify(title, message);
     }
 
     // Get list of HDR-capable monitors
