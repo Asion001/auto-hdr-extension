@@ -67,14 +67,14 @@ const HDRMenuToggle = GObject.registerClass(
                 this._monitorToggles.clear();
 
                 if (monitors.length === 0) {
-                // No HDR monitors found
-                    const noMonitorsItem = new QuickSettings.QuickMenuToggle({
+                // No HDR monitors found - just add a simple label
+                    const noMonitorsToggle = new QuickSettings.QuickToggle({
                         title: 'No HDR monitors detected',
                         iconName: 'dialog-information-symbolic',
                         toggleMode: false,
                     });
-                    noMonitorsItem.sensitive = false;
-                    this.menu.addMenuItem(noMonitorsItem.menu);
+                    noMonitorsToggle.sensitive = false;
+                    this.menu.addMenuItem(noMonitorsToggle);
                     return;
                 }
 
@@ -311,7 +311,6 @@ export default class AutoHDRExtension extends Extension {
 
     _log(message) {
         if (this._settings && this._settings.get_boolean('enable-logging')) {
-            // eslint-disable-next-line no-undef
             console.log(`[Auto HDR] ${message}`);
         }
     }
