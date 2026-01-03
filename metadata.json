@@ -2,8 +2,8 @@
   "uuid": "auto-hdr@asion.dev",
   "name": "Auto HDR",
   "description": "Automatically enables or disables HDR for specific applications on selected monitors",
-  "version": 3,
-  "version-name": "1.0.3",
+  "version": 4,
+  "version-name": "1.1.0",
   "shell-version": [
     "49"
   ],
