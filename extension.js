@@ -14,25 +14,21 @@ const DISPLAY_CONFIG_BUS_NAME = 'org.gnome.Mutter.DisplayConfig';
 
 // Individual monitor toggle in the expanded menu
 const HDRMonitorToggle = GObject.registerClass(
-    class HDRMonitorToggle extends QuickSettings.QuickToggle {
+    class HDRMonitorToggle extends PopupMenu.PopupSwitchMenuItem {
         _init(extension, monitorConnector, monitorName) {
-            super._init({
-                title: monitorName || monitorConnector,
-                iconName: 'video-display-symbolic',
-                toggleMode: true,
-            });
+            super._init(monitorName || monitorConnector, false);
 
             this._extension = extension;
             this._monitorConnector = monitorConnector;
 
             // Connect toggle handler
-            this.connect('clicked', () => {
-                this._extension._toggleMonitorHDR(this._monitorConnector, this.checked);
+            this.connect('toggled', (item, state) => {
+                this._extension._toggleMonitorHDR(this._monitorConnector, state);
             });
         }
 
         updateState(enabled) {
-            this.checked = enabled;
+            this.setToggleState(enabled);
         }
     });
 
@@ -72,13 +68,11 @@ const HDRMenuToggle = GObject.registerClass(
 
                 if (monitors.length === 0) {
                 // No HDR monitors found - just add a simple label
-                    const noMonitorsToggle = new QuickSettings.QuickToggle({
-                        title: 'No HDR monitors detected',
-                        iconName: 'dialog-information-symbolic',
-                        toggleMode: false,
+                    const noMonitorsItem = new PopupMenu.PopupMenuItem('No HDR monitors detected', {
+                        reactive: false,
+                        can_focus: false
                     });
-                    noMonitorsToggle.sensitive = false;
-                    this.menu.addMenuItem(noMonitorsToggle);
+                    this.menu.addMenuItem(noMonitorsItem);
                     return;
                 }
 
@@ -97,15 +91,9 @@ const HDRMenuToggle = GObject.registerClass(
                 this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
                 // Add Auto HDR toggle
-                const autoHDRToggle = new QuickSettings.QuickToggle({
-                    title: 'Automatic HDR',
-                    subtitle: 'Toggle based on apps',
-                    iconName: 'emblem-synchronizing-symbolic',
-                    toggleMode: true,
-                });
-                autoHDRToggle.checked = this._extension._settings.get_boolean('enable-auto-hdr');
-                autoHDRToggle.connect('clicked', () => {
-                    this._extension._settings.set_boolean('enable-auto-hdr', autoHDRToggle.checked);
+                const autoHDRToggle = new PopupMenu.PopupSwitchMenuItem('Automatic HDR', this._extension._settings.get_boolean('enable-auto-hdr'));
+                autoHDRToggle.connect('toggled', (item, state) => {
+                    this._extension._settings.set_boolean('enable-auto-hdr', state);
                 });
                 this.menu.addMenuItem(autoHDRToggle);
 
@@ -598,7 +586,11 @@ export default class AutoHDRExtension extends Extension {
             Main.messageTray.add(this._notificationSource);
         }
 
-        const notification = new MessageTray.Notification(this._notificationSource, title, message);
+        const notification = new MessageTray.Notification({
+            source: this._notificationSource,
+            title: title,
+            body: message
+        });
         notification.setTransient(true); // Auto-dismiss after a few seconds
         this._notificationSource.showNotification(notification);
     }
