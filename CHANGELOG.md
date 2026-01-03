@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Individual per-monitor toggles when expanded
   - HDR indicator icon in top bar (visible when HDR is enabled)
   - Automatic state synchronization between automatic and manual controls
+  - **Preference to show/hide Quick Settings toggle**: Control visibility of the HDR button in preferences
 
 ### Fixed
 - Fixed HDR control to use proper Mutter DisplayConfig DBus API (`org.gnome.Mutter.DisplayConfig`)

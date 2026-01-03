@@ -65,6 +65,25 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         });
         page.add(settingsGroup);
 
+        // Quick Settings toggle switch
+        const quickSettingsRow = new Adw.ActionRow({
+            title: 'Show Quick Settings Toggle',
+            subtitle: 'Display HDR toggle button in the system menu',
+        });
+        const quickSettingsSwitch = new Gtk.Switch({
+            active: settings.get_boolean('show-quick-settings-toggle'),
+            valign: Gtk.Align.CENTER,
+        });
+        settings.bind(
+            'show-quick-settings-toggle',
+            quickSettingsSwitch,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+        quickSettingsRow.add_suffix(quickSettingsSwitch);
+        quickSettingsRow.activatable_widget = quickSettingsSwitch;
+        settingsGroup.add(quickSettingsRow);
+
         // Debug logging switch
         const loggingRow = new Adw.ActionRow({
             title: 'Enable Debug Logging',

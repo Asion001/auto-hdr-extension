@@ -75,7 +75,9 @@ If you find yourself in a similar situation—enjoying HDR content but dealing w
    - **Turn HDR On**: Add applications that should enable HDR when launched
    - **Turn HDR Off**: Add applications that should disable HDR when launched
    - **Monitors**: Specify monitor connectors (leave empty for all HDR-capable displays)
-   - **Settings**: Enable debug logging if needed
+   - **Settings**:
+     - **Show Quick Settings Toggle**: Enable/disable the HDR button in the system menu (enabled by default)
+     - **Enable Debug Logging**: Turn on detailed logging for troubleshooting
 
 ### Example Use Cases
 

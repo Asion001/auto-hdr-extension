@@ -162,6 +162,7 @@ export default class AutoHDRExtension extends Extension {
         this._appSystem = null;
         this._windowTracker = null;
         this._runningAppsChangedId = null;
+        this._settingsChangedId = null;
         this._windowsChangedIds = [];
         this._displayConfigProxy = null;
         this._trackedApps = new Set();
@@ -178,9 +179,16 @@ export default class AutoHDRExtension extends Extension {
         // Initialize DBus proxy for DisplayConfig asynchronously
         this._initDisplayConfigProxy();
 
-        // Create and add Quick Settings indicator
-        this._indicator = new HDRIndicator(this);
-        Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
+        // Create and add Quick Settings indicator if enabled
+        if (this._settings.get_boolean('show-quick-settings-toggle')) {
+            this._indicator = new HDRIndicator(this);
+            Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
+        }
+
+        // Watch for changes to the quick settings toggle setting
+        this._settingsChangedId = this._settings.connect('changed::show-quick-settings-toggle', () => {
+            this._updateQuickSettingsVisibility();
+        });
 
         // Connect to app system changes
         this._runningAppsChangedId = this._appSystem.connect(
@@ -204,6 +212,11 @@ export default class AutoHDRExtension extends Extension {
         if (this._runningAppsChangedId) {
             this._appSystem.disconnect(this._runningAppsChangedId);
             this._runningAppsChangedId = null;
+        }
+
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
         }
 
         this._windowsChangedIds.forEach(id => {
@@ -278,6 +291,22 @@ export default class AutoHDRExtension extends Extension {
                 }
             }
         );
+    }
+
+    _updateQuickSettingsVisibility() {
+        const shouldShow = this._settings.get_boolean('show-quick-settings-toggle');
+
+        if (shouldShow && !this._indicator) {
+            // Create and add indicator
+            this._indicator = new HDRIndicator(this);
+            Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
+            this._log('Quick Settings toggle enabled');
+        } else if (!shouldShow && this._indicator) {
+            // Remove and destroy indicator
+            this._indicator.destroy();
+            this._indicator = null;
+            this._log('Quick Settings toggle disabled');
+        }
     }
 
     _log(message) {

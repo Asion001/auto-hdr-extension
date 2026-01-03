@@ -21,5 +21,10 @@
       <summary>Enable debug logging</summary>
       <description>Enable detailed logging for debugging purposes</description>
     </key>
+    <key name="show-quick-settings-toggle" type="b">
+      <default>true</default>
+      <summary>Show Quick Settings toggle</summary>
+      <description>Show HDR toggle button in the Quick Settings menu</description>
+    </key>
   </schema>
 </schemalist>
