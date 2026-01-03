@@ -93,7 +93,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
 
         // Get current apps
         const apps = settings.get_strv(key);
-        
+
         // Add current apps to the list
         apps.forEach(appId => {
             const appRow = this._createAppRow(settings, key, appId);
@@ -118,7 +118,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
 
     _createAppRow(settings, key, appId) {
         const appInfo = Gio.DesktopAppInfo.new(appId);
-        
+
         if (!appInfo) {
             return null;
         }
@@ -201,16 +201,16 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         // Populate with apps
         const apps = Gio.AppInfo.get_all();
         const currentApps = settings.get_strv(key);
-        
+
         let selectedAppId = null;
 
         apps.forEach(appInfo => {
             const appId = appInfo.get_id();
-            
+
             if (!appId || !appInfo.should_show()) {
                 return;
             }
-            
+
             // Skip already added apps
             if (currentApps.includes(appId)) {
                 return;
@@ -271,13 +271,13 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
                 if (selectedRow) {
                     selectedAppId = selectedRow._appId;
                 }
-                
+
                 if (selectedAppId) {
                     const apps = settings.get_strv(key);
                     if (!apps.includes(selectedAppId)) {
                         apps.push(selectedAppId);
                         settings.set_strv(key, apps);
-                        
+
                         const appRow = this._createAppRow(settings, key, selectedAppId);
                         if (appRow) {
                             expanderRow.add_row(appRow);
@@ -298,7 +298,7 @@ export default class AutoHDRPreferences extends ExtensionPreferences {
         });
 
         const selectedMonitors = settings.get_strv('selected-monitors');
-        
+
         // Add info label if no specific monitors selected
         if (selectedMonitors.length === 0) {
             const infoRow = new Adw.ActionRow({
