@@ -297,6 +297,12 @@ export default class AutoHDRExtension extends Extension {
                     this._displayConfigProxy = Gio.DBusProxy.new_for_bus_finish(result);
                     this._log('DisplayConfig proxy initialized');
 
+                    // Monitor for external monitor configuration changes
+                    this._displayConfigProxy.connect('g-signal', () => {
+                        this._log('Monitor configuration changed externally');
+                        this._onExternalMonitorChange();
+                    });
+
                     // Now that proxy is ready, do initial check
                     this._checkRunningApps();
                 } catch (e) {
@@ -319,6 +325,13 @@ export default class AutoHDRExtension extends Extension {
             this._indicator.destroy();
             this._indicator = null;
             this._log('Quick Settings toggle disabled');
+        }
+    }
+
+    _onExternalMonitorChange() {
+        // Update Quick Settings UI when monitor configuration changes externally
+        if (this._indicator) {
+            this._indicator.refreshMenu();
         }
     }
 
