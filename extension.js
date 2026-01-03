@@ -588,7 +588,7 @@ export default class AutoHDRExtension extends Extension {
 
         const notification = new MessageTray.Notification({
             source: this._notificationSource,
-            title: title,
+            title,
             body: message
         });
         notification.setTransient(true); // Auto-dismiss after a few seconds
