@@ -20,14 +20,17 @@ const HDRMonitorToggle = GObject.registerClass(
             this._extension = extension;
             this._monitorConnector = monitorConnector;
 
-            // Connect toggle handler
-            this.connect('toggled', (item, state) => {
+            // Connect toggle handler and store the signal ID
+            this._toggledId = this.connect('toggled', (item, state) => {
                 this._extension._toggleMonitorHDR(this._monitorConnector, state);
             });
         }
 
         updateState(enabled) {
+            // Block signals while updating state to prevent infinite loops
+            this.block_signal_handler(this._toggledId);
             this.setToggleState(enabled);
+            this.unblock_signal_handler(this._toggledId);
         }
     });
 
