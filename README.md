@@ -18,6 +18,7 @@ If you find yourself in a similar situation—enjoying HDR content but dealing w
 
 - 🎮 **Automatic HDR Control**: Turn HDR on/off when specific applications launch
 - 🖥️ **Monitor Selection**: Control HDR for specific monitors or all HDR-capable displays
+- 🚀 **Quick Settings Integration**: Toggle HDR directly from the system menu with expandable monitor controls
 - ⚙️ **Simple Configuration**: Easy-to-use preferences UI for managing apps and monitors
 - 🔍 **App Detection**: Tracks running applications and responds to app launches/closures
 - 🪵 **Debug Logging**: Optional logging for troubleshooting
@@ -84,12 +85,28 @@ If you find yourself in a similar situation—enjoying HDR content but dealing w
 
 ## Usage
 
+The extension provides both automatic and manual HDR control:
+
+### Automatic Mode
+
 Once configured, the extension works automatically:
 
 1. Launch an app in your "Turn HDR On" list → HDR enables
 2. Close the app → HDR disables (if no other HDR apps are running)
 3. Launch an app in your "Turn HDR Off" list → HDR disables
 4. Close the app → HDR re-enables (if no other HDR-off apps are running)
+
+### Manual Control via Quick Settings
+
+You can also manually toggle HDR using the Quick Settings menu:
+
+1. **Quick Toggle**: Click the system menu (power/audio/network icons) in the top-right corner
+2. **HDR Button**: Look for the "HDR" toggle button with a color icon
+3. **Quick Toggle**: Click the button to toggle HDR for all configured monitors
+4. **Expanded View**: Click the arrow next to the HDR button to see individual monitor controls
+5. **Per-Monitor Control**: Toggle HDR for specific monitors independently
+
+The HDR icon in the top bar will be visible when HDR is enabled on any monitor.
 
 Notifications will appear when HDR state changes.
 

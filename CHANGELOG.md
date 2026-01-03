@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Quick Settings Integration**: Toggle HDR directly from the system menu (power/audio/network icons area)
+  - Main toggle button in collapsed view for quick HDR on/off
+  - Expandable menu showing all HDR-capable monitors
+  - Individual per-monitor toggles when expanded
+  - HDR indicator icon in top bar (visible when HDR is enabled)
+  - Automatic state synchronization between automatic and manual controls
+
 ### Fixed
 - Fixed HDR control to use proper Mutter DisplayConfig DBus API (`org.gnome.Mutter.DisplayConfig`)
 - HDR now actually toggles on/off using `bt2100-pq` color mode for HDR10
