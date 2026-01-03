@@ -3,7 +3,6 @@ import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -14,25 +13,27 @@ const DISPLAY_CONFIG_BUS_NAME = 'org.gnome.Mutter.DisplayConfig';
 
 // Individual monitor toggle in the expanded menu
 const HDRMonitorToggle = GObject.registerClass(
-    class HDRMonitorToggle extends QuickSettings.QuickToggle {
+    class HDRMonitorToggle extends PopupMenu.PopupSwitchMenuItem {
         _init(extension, monitorConnector, monitorName) {
-            super._init({
-                title: monitorName || monitorConnector,
-                iconName: 'video-display-symbolic',
-                toggleMode: true,
-            });
+            super._init(monitorName || monitorConnector, false);
 
             this._extension = extension;
             this._monitorConnector = monitorConnector;
 
-            // Connect toggle handler
-            this.connect('clicked', () => {
-                this._extension._toggleMonitorHDR(this._monitorConnector, this.checked);
+            // Store signal ID to enable blocking during programmatic state updates
+            this._toggledId = this.connect('toggled', (item, state) => {
+                this._extension._toggleMonitorHDR(this._monitorConnector, state);
             });
         }
 
         updateState(enabled) {
-            this.checked = enabled;
+            // Block signals while updating state to prevent infinite loops
+            this.block_signal_handler(this._toggledId);
+            try {
+                this.checked = enabled;
+            } finally {
+                this.unblock_signal_handler(this._toggledId);
+            }
         }
     });
 
@@ -56,8 +57,18 @@ const HDRMenuToggle = GObject.registerClass(
                 this._extension._toggleAllHDR(this.checked);
             });
 
-            // Build the menu with monitor toggles
-            this._buildMenu();
+            // Build the menu with monitor toggles - defer to next tick
+            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                this._buildMenu();
+                return GLib.SOURCE_REMOVE;
+            });
+
+            // Update states when the menu is opened
+            this.menu.connect('open-state-changed', (menu, isOpen) => {
+                if (isOpen) {
+                    this._updateStates();
+                }
+            });
         }
 
         _buildMenu() {
@@ -69,13 +80,11 @@ const HDRMenuToggle = GObject.registerClass(
 
                 if (monitors.length === 0) {
                 // No HDR monitors found - just add a simple label
-                    const noMonitorsToggle = new QuickSettings.QuickToggle({
-                        title: 'No HDR monitors detected',
-                        iconName: 'dialog-information-symbolic',
-                        toggleMode: false,
+                    const noMonitorsItem = new PopupMenu.PopupMenuItem('No HDR monitors detected', {
+                        reactive: false,
+                        can_focus: false
                     });
-                    noMonitorsToggle.sensitive = false;
-                    this.menu.addMenuItem(noMonitorsToggle);
+                    this.menu.addMenuItem(noMonitorsItem);
                     return;
                 }
 
@@ -94,15 +103,9 @@ const HDRMenuToggle = GObject.registerClass(
                 this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
                 // Add Auto HDR toggle
-                const autoHDRToggle = new QuickSettings.QuickToggle({
-                    title: 'Automatic HDR',
-                    subtitle: 'Toggle based on apps',
-                    iconName: 'emblem-synchronizing-symbolic',
-                    toggleMode: true,
-                });
-                autoHDRToggle.checked = this._extension._settings.get_boolean('enable-auto-hdr');
-                autoHDRToggle.connect('clicked', () => {
-                    this._extension._settings.set_boolean('enable-auto-hdr', autoHDRToggle.checked);
+                const autoHDRToggle = new PopupMenu.PopupSwitchMenuItem('Automatic HDR', this._extension._settings.get_boolean('enable-auto-hdr'));
+                autoHDRToggle.connect('toggled', (item, state) => {
+                    this._extension._settings.set_boolean('enable-auto-hdr', state);
                 });
                 this.menu.addMenuItem(autoHDRToggle);
 
@@ -182,9 +185,10 @@ export default class AutoHDRExtension extends Extension {
         this._settingsChangedId = null;
         this._windowsChangedIds = [];
         this._displayConfigProxy = null;
+        this._displayConfigSignalId = null;
+        this._externalChangeTimeout = null;
         this._trackedApps = new Set();
         this._hdrEnabled = false; // Track current HDR state
-        this._notificationSource = null;
         this._indicator = null; // Quick Settings indicator
     }
 
@@ -245,10 +249,16 @@ export default class AutoHDRExtension extends Extension {
         });
         this._windowsChangedIds = [];
 
-        // Cleanup notification source
-        if (this._notificationSource) {
-            this._notificationSource.destroy();
-            this._notificationSource = null;
+        // Disconnect DisplayConfig signal
+        if (this._displayConfigProxy && this._displayConfigSignalId) {
+            this._displayConfigProxy.disconnect(this._displayConfigSignalId);
+            this._displayConfigSignalId = null;
+        }
+
+        // Clear any pending timeouts
+        if (this._externalChangeTimeout) {
+            GLib.source_remove(this._externalChangeTimeout);
+            this._externalChangeTimeout = null;
         }
 
         // Cleanup Quick Settings indicator
@@ -301,6 +311,16 @@ export default class AutoHDRExtension extends Extension {
                     this._displayConfigProxy = Gio.DBusProxy.new_for_bus_finish(result);
                     this._log('DisplayConfig proxy initialized');
 
+                    // Monitor for external monitor configuration changes
+                    // Filter for MonitorsChanged signal if available, otherwise handle all signals
+                    this._displayConfigSignalId = this._displayConfigProxy.connect('g-signal', (proxy, senderName, signalName) => {
+                        // Only process if it's a MonitorsChanged signal or if signal name is not specified
+                        if (!signalName || signalName === 'MonitorsChanged') {
+                            this._log(`Monitor configuration changed externally (signal: ${signalName || 'any'})`);
+                            this._onExternalMonitorChange();
+                        }
+                    });
+
                     // Now that proxy is ready, do initial check
                     this._checkRunningApps();
                 } catch (e) {
@@ -324,6 +344,37 @@ export default class AutoHDRExtension extends Extension {
             this._indicator = null;
             this._log('Quick Settings toggle disabled');
         }
+    }
+
+    _onExternalMonitorChange() {
+        // Debounce rapid configuration changes
+        if (this._externalChangeTimeout) {
+            GLib.source_remove(this._externalChangeTimeout);
+        }
+
+        this._externalChangeTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+            this._externalChangeTimeout = null;
+
+            // Update Quick Settings UI when monitor configuration changes externally
+            if (this._indicator) {
+                // Check current HDR state and update UI
+                this._getCurrentHDRState((hdrState) => {
+                    // Check if any monitor has HDR enabled
+                    const anyEnabled = Array.from(hdrState.values()).some(enabled => enabled);
+
+                    // Update internal state
+                    this._hdrEnabled = anyEnabled;
+
+                    // Update indicator icon
+                    this._indicator.updateIndicator(anyEnabled);
+
+                    // Refresh menu to update toggle states
+                    this._indicator.refreshMenu();
+                });
+            }
+
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     _log(message) {
@@ -585,16 +636,9 @@ export default class AutoHDRExtension extends Extension {
     }
 
     _showNotification(title, message) {
-        // Create a transient notification that auto-dismisses
-        // Using the messageTray system for better control
-        if (!this._notificationSource) {
-            this._notificationSource = new MessageTray.Source('Auto HDR', 'preferences-system-symbolic');
-            Main.messageTray.add(this._notificationSource);
-        }
-
-        const notification = new MessageTray.Notification(this._notificationSource, title, message);
-        notification.setTransient(true); // Auto-dismiss after a few seconds
-        this._notificationSource.showNotification(notification);
+        // Use Main.notify() for simple transient notifications in GNOME Shell 49
+        // This is the recommended approach for extensions
+        Main.notify(title, message);
     }
 
     // Get list of HDR-capable monitors

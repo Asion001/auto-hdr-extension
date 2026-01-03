@@ -32,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed mode ID extraction** - now correctly extracts current mode ID from monitors array by finding mode with `is-current` property
 - **Fixed confirmation dialogs** - changed from persistent method (2) to temporary method (1) to avoid "save/revert" prompts
 - **Fixed color-mode value type** - use u32 integer (0=SDR, 1=HDR) instead of string per Mutter API specification
+- **Fixed notification system** - Replaced MessageTray.Source/Notification API with simple `Main.notify()` calls for GNOME Shell 49 compatibility
+- **Fixed ClutterActor initialization error** - Deferred menu building to next event loop tick to ensure menu object is fully initialized before use
+- **Fixed Quick Settings menu items** - Changed from QuickToggle widgets to PopupMenu.PopupSwitchMenuItem for proper menu integration
+- **Fixed infinite toggle loop** - Block signals when programmatically updating toggle state to prevent infinite loops and status bar blinking
+- **Fixed stale button states** - Update Quick Settings toggle states automatically when menu is opened
+- **Fixed external HDR change detection** - Monitor DisplayConfig signals with debouncing to update UI when HDR is changed in Settings app
+- **Fixed signal cleanup** - Properly disconnect DisplayConfig signals and clear timeouts during extension disable to prevent memory leaks
 
 ### Changed
 - Replaced incorrect `global.context.get_debug_control().enable_hdr` with proper DBus calls
