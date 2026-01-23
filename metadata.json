@@ -8,5 +8,8 @@
     "49"
   ],
   "url": "https://github.com/Asion001/auto-hdr-extension",
-  "settings-schema": "org.gnome.shell.extensions.auto-hdr"
+  "settings-schema": "org.gnome.shell.extensions.auto-hdr",
+  "donations": {
+    "github": "Asion001"
+  }
 }
